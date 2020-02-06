@@ -65,6 +65,12 @@
 	          class="postgrescompare.LabelView"
 	          icon="icons\sample.png"/>
 	</extension>
+	<extension point="org.eclipse.ui.views">
+	        <view id="postgrescompare.connectionsview"
+	             name="Connections View"
+	          class="postgrescompare.ConnectionsView"
+	          icon="icons\sample.png"/>
+	</extension>
 	<!--
 	<extension point="org.eclipse.ui.views">
 	     <category 

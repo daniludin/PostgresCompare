@@ -14,18 +14,18 @@ import org.eclipse.ui.IViewSite;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.part.ViewPart;
 
-public class LabelView extends ViewPart  {
+public class ConnectionsView extends ViewPart  {
 	private Label label;
     Text txtAbstract;
     Action addTestConnectionAction;
 
-	public LabelView() {
+	public ConnectionsView() {
 		super();
 	}
 
 	public void init(IViewSite site) throws PartInitException {
 		super.init(site);
-		System.out.println("LabelView init");
+		// Normally we might do other stuff here.
 	}
 
 	public void setFocus() {
