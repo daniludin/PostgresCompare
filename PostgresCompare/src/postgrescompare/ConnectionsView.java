@@ -28,6 +28,7 @@ public class ConnectionsView extends ViewPart {
 	private Label labelLeft1;
 	private Label labelLeft2;
 	Text txtUrlLeft;
+	Action addCompareAction;
 	Action addTestConnectionAction;
 
 	public ConnectionsView() {
@@ -124,30 +125,29 @@ public class ConnectionsView extends ViewPart {
 	}
 
 	public void createActions() {
-		addTestConnectionAction = new Action("Add...") {
+		addCompareAction = new Action("Compare Databases") {
 			public void run() {
-				addItem();
+				compare();
 			}
 		};
-		//addTestConnectionAction.setImageDescriptor(getImageDescriptor("twowaycompare_co.gif"));
-		addTestConnectionAction.setImageDescriptor(
+		addCompareAction.setImageDescriptor(
 			        AbstractUIPlugin.imageDescriptorFromPlugin("PostgresCompare", "icons/twowaycompare_co.gif"));
-		 // Add selection listener.
-//		viewer.addSelectionChangedListener(new ISelectionChangedListener() {
-//			public void selectionChanged(SelectionChangedEvent event) {
-//				updateActionEnablement();
-//			}
-//		});
+		
+		addTestConnectionAction = new Action("Test Database Connections") {
+			public void run() {
+				testConnections();
+			}
+		};
+		addTestConnectionAction.setImageDescriptor(
+			        AbstractUIPlugin.imageDescriptorFromPlugin("PostgresCompare", "icons/ftpconnecting.gif"));
 	}
-    /**
-     * Create menu.
-     */
     
     /**
      * Create toolbar.
      */
     private void createToolbar() {
             IToolBarManager mgr = getViewSite().getActionBars().getToolBarManager();
+            mgr.add(addCompareAction);
             mgr.add(addTestConnectionAction);
             //mgr.add(deleteItemAction);
     }
@@ -157,8 +157,12 @@ public class ConnectionsView extends ViewPart {
 //                (IStructuredSelection)viewer.getSelection();
 		// deleteItemAction.setEnabled(sel.size() > 0);
 	}
-	private void addItem() {
-		System.out.println("addItem clicked");
+	private void compare() {
+		System.out.println("compare clicked");
+
+	}
+	private void testConnections() {
+		System.out.println("testConnections clicked");
 
 	}
 	/**
