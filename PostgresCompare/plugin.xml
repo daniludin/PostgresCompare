@@ -71,17 +71,4 @@
 	          class="postgrescompare.ConnectionsView"
 	          icon="icons\sample.png"/>
 	</extension>
-	<!--
-	<extension point="org.eclipse.ui.views">
-	     <category 
-	           id="org.eclipse.ui.article"
-	           name="Article">
-	        </category>
-	        <view id="postgrescompare.wordview"
-	                name="Word View"
-	                icon="icons\view.gif"
-	             category="org.eclipse.ui.article"
-	                class="postgrescompare.WordView"/>
-	</extension>
-	-->
 </plugin>

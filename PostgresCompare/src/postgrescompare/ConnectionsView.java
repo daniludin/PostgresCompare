@@ -41,19 +41,23 @@ public class ConnectionsView extends ViewPart {
 
 	@Override
 	public void init(IViewSite site, IMemento memento) throws PartInitException {
-		// TODO Auto-generated method stub
-//		super.init(site, memento);
-		init(site);
-		this.memento = memento; 
-
+		super.init(site, memento);
+		System.out.println("init");
+//		init(site);
+//		this.memento = memento; 
 	}
 
 	@Override
 	public void saveState(IMemento memento) {
-		// TODO Auto-generated method stub
-//		super.saveState(memento);
 		this.memento = memento.createChild("urlsleft", txtUrlLeft.getText());
-
+		savePluginSettings();
+	}
+	@Override
+	public void dispose()
+	{
+		System.out.println("dispose");
+		//savePluginSettings();
+	  super.dispose();
 	}
 
 	private void restoreState() {
@@ -166,7 +170,9 @@ public class ConnectionsView extends ViewPart {
 //		});
 		createActions();
 		createToolbar();
-		restoreState();
+		
+//		restoreState();
+		loadPluginSettings();
 	}
 
 	private void saveCstProfile() {
@@ -214,24 +220,25 @@ public class ConnectionsView extends ViewPart {
 
 	private void testConnections() {
 		System.out.println("testConnections clicked");
+		savePluginSettings();
 
 	}
 
 	/**
 	 * Returns the image descriptor with the given relative path.
 	 */
-	private ImageDescriptor getImageDescriptor(String relativePath) {
-		String iconPath = "icons/";
-		try {
-			UIPlugin plugin = UIPlugin.getDefault();
-			URL installURL = plugin.getBundle().getEntry("/");
-			URL url = new URL(installURL, iconPath + relativePath);
-			return ImageDescriptor.createFromURL(url);
-		} catch (MalformedURLException e) {
-			// should not happen
-			return ImageDescriptor.getMissingImageDescriptor();
-		}
-	}
+//	private ImageDescriptor getImageDescriptor(String relativePath) {
+//		String iconPath = "icons/";
+//		try {
+//			UIPlugin plugin = UIPlugin.getDefault();
+//			URL installURL = plugin.getBundle().getEntry("/");
+//			URL url = new URL(installURL, iconPath + relativePath);
+//			return ImageDescriptor.createFromURL(url);
+//		} catch (MalformedURLException e) {
+//			// should not happen
+//			return ImageDescriptor.getMissingImageDescriptor();
+//		}
+//	}
 
 	private void savePluginSettings() {
 		// saves plugin preferences at the workspace level
