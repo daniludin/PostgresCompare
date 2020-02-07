@@ -31,12 +31,29 @@ import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 
 public class ConnectionsView extends ViewPart {
-	private Label labelLeft1;
-	private Label labelLeft2;
+	Label labelLeftTitle;
+	Label labelLeft1;
+	Label labelLeft2;
+	Label labelLeft3;
 	Text txtUrlLeft;
+	Text txtUsernameLeft;
+	Text txtPasswordLeft;
+
+	Label labelRightTitle;
+	Label labelRight1;
+	Label labelRight2;
+	Label labelRight3;
+	Text txtUrlRight;
+	Text txtUsernameRight;
+	Text txtPasswordRight;
 	Action addCompareAction;
 	Action addTestConnectionAction;
-	String KEY1 = "urlsleft";
+	String KEY_LEFT_1 = "urlleft";
+	String KEY_LEFT_2 = "usernameleft";
+	String KEY_LEFT_3 = "passwordleft";
+	String KEY_RIGHT_1 = "urlright";
+	String KEY_RIGHT_2 = "usernameright";
+	String KEY_RIGHT_3 = "passwordright";
 	IMemento memento;
 
 	@Override
@@ -102,49 +119,83 @@ public class ConnectionsView extends ViewPart {
 		baseCanvas.setBackground(new Color(Display.getDefault(), 0, 239, 239));
 		baseCanvas.setLayout(new GridLayout(2, false));
 
-//		FillLayout glBase = new FillLayout();
-//		glBase.type = SWT.VERTICAL;
-//		GridData gdBase = new GridData();
-//		gdBase.horizontalAlignment = SWT.FILL;
-//		gdBase.grabExcessHorizontalSpace = true;
-//		baseCanvas.setLayout(glBase);
-
-		Label labelLeftTitle = new Label(baseCanvas, 0);
+		// Database A
+		labelLeftTitle = new Label(baseCanvas, 0);
 		labelLeftTitle.setText("Postgres Datenbank A");
-		GridData gridData = new GridData();
-		gridData.horizontalAlignment = GridData.FILL;
-		gridData.horizontalSpan = 2;
-		labelLeftTitle.setLayoutData(gridData);
+		GridData gridDataL = new GridData();
+		gridDataL.horizontalAlignment = GridData.FILL;
+		gridDataL.horizontalSpan = 2;
+		labelLeftTitle.setLayoutData(gridDataL);
 
 		labelLeft1 = new Label(baseCanvas, 0);
 		labelLeft1.setText("Connection URL");
 
 		txtUrlLeft = new Text(baseCanvas, SWT.BORDER);
-		GridData gridDataText = new GridData(GridData.BEGINNING);
-		gridDataText.horizontalAlignment = GridData.FILL;
-		gridDataText.widthHint = 300;
-		gridDataText.minimumWidth = 300;
-		txtUrlLeft.setLayoutData(gridDataText);
+		GridData gridDataTextL = new GridData(GridData.BEGINNING);
+		gridDataTextL.horizontalAlignment = GridData.FILL;
+		gridDataTextL.widthHint = 300;
+		gridDataTextL.minimumWidth = 300;
+		txtUrlLeft.setLayoutData(gridDataTextL);
 
 		labelLeft2 = new Label(baseCanvas, 0);
 		labelLeft2.setText("Username");
 
-		Text txtUsernameLeft = new Text(baseCanvas, SWT.BORDER);
-		GridData gridDataUsername = new GridData(GridData.BEGINNING);
-		gridDataUsername.horizontalAlignment = GridData.FILL;
-		gridDataUsername.widthHint = 300;
-		gridDataUsername.minimumWidth = 300;
-		txtUsernameLeft.setLayoutData(gridDataUsername);
+		txtUsernameLeft = new Text(baseCanvas, SWT.BORDER);
+		GridData gridDataUsernameL = new GridData(GridData.BEGINNING);
+		gridDataUsernameL.horizontalAlignment = GridData.FILL;
+		gridDataUsernameL.widthHint = 300;
+		gridDataUsernameL.minimumWidth = 300;
+		txtUsernameLeft.setLayoutData(gridDataUsernameL);
 
-		Label labelLeft3 = new Label(baseCanvas, 0);
+		labelLeft3 = new Label(baseCanvas, 0);
 		labelLeft3.setText("Passwort");
 
-		Text txtPasswordLeft = new Text(baseCanvas, SWT.BORDER);
-		GridData gridDataPassword = new GridData(GridData.BEGINNING);
-		gridDataPassword.horizontalAlignment = GridData.FILL;
-		gridDataPassword.widthHint = 300;
-		gridDataPassword.minimumWidth = 300;
-		txtPasswordLeft.setLayoutData(gridDataPassword);
+		txtPasswordLeft = new Text(baseCanvas, SWT.BORDER);
+		GridData gridDataPasswordL = new GridData(GridData.BEGINNING);
+		gridDataPasswordL.horizontalAlignment = GridData.FILL;
+		gridDataPasswordL.widthHint = 300;
+		gridDataPasswordL.minimumWidth = 300;
+		txtPasswordLeft.setLayoutData(gridDataPasswordL);
+
+		// Database B
+		labelRightTitle = new Label(baseCanvas, 0);
+		labelRightTitle.setText("Postgres Datenbank B");
+		GridData gridDataR = new GridData();
+		gridDataR.verticalIndent = 30;
+		gridDataR.horizontalAlignment = GridData.FILL;
+		gridDataR.horizontalSpan = 2;
+		labelRightTitle.setLayoutData(gridDataR);
+
+		labelRight1 = new Label(baseCanvas, 0);
+		labelRight1.setText("Connection URL");
+
+		txtUrlRight = new Text(baseCanvas, SWT.BORDER);
+		GridData gridDataTextR = new GridData(GridData.BEGINNING);
+		gridDataTextR.horizontalAlignment = GridData.FILL;
+		gridDataTextR.widthHint = 300;
+		gridDataTextR.minimumWidth = 300;
+		txtUrlRight.setLayoutData(gridDataTextR);
+
+		labelRight2 = new Label(baseCanvas, 0);
+		labelRight2.setText("Username");
+
+		txtUsernameRight = new Text(baseCanvas, SWT.BORDER);
+		GridData gridDataUsernameR = new GridData(GridData.BEGINNING);
+		gridDataUsernameR.horizontalAlignment = GridData.FILL;
+		gridDataUsernameR.widthHint = 300;
+		gridDataUsernameR.minimumWidth = 300;
+		txtUsernameRight.setLayoutData(gridDataUsernameR);
+
+		labelRight3 = new Label(baseCanvas, 0);
+		labelRight3.setText("Passwort");
+
+		txtPasswordRight = new Text(baseCanvas, SWT.BORDER);
+		GridData gridDataPasswordR = new GridData(GridData.BEGINNING);
+		gridDataPasswordR.horizontalAlignment = GridData.FILL;
+		gridDataPasswordR.widthHint = 300;
+		gridDataPasswordR.minimumWidth = 300;
+		txtPasswordRight.setLayoutData(gridDataPasswordR);
+
 
 //		Canvas buttonCanvas = new Canvas(baseCanvas, SWT.NONE);
 //		GridLayout glButtonCanvas = new GridLayout();
@@ -221,31 +272,24 @@ public class ConnectionsView extends ViewPart {
 	private void testConnections() {
 		System.out.println("testConnections clicked");
 		savePluginSettings();
-
+		ReadDatabaseStructure rds = new ReadDatabaseStructure();
+		StringBuffer sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(), this.txtUsernameLeft.getText(), this.txtPasswordLeft.getText());
+		System.out.println("-- Left Database");
+		System.out.println(sbLeft.toString());
 	}
 
-	/**
-	 * Returns the image descriptor with the given relative path.
-	 */
-//	private ImageDescriptor getImageDescriptor(String relativePath) {
-//		String iconPath = "icons/";
-//		try {
-//			UIPlugin plugin = UIPlugin.getDefault();
-//			URL installURL = plugin.getBundle().getEntry("/");
-//			URL url = new URL(installURL, iconPath + relativePath);
-//			return ImageDescriptor.createFromURL(url);
-//		} catch (MalformedURLException e) {
-//			// should not happen
-//			return ImageDescriptor.getMissingImageDescriptor();
-//		}
-//	}
+	
 
 	private void savePluginSettings() {
 		// saves plugin preferences at the workspace level
 		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode("PostgresCompare");
 
-		prefs.put(KEY1, this.txtUrlLeft.getText());
-//		  prefs.put(KEY2, this.someBool);
+		prefs.put(KEY_LEFT_1, this.txtUrlLeft.getText());
+		prefs.put(KEY_LEFT_2, this.txtUsernameLeft.getText());
+		prefs.put(KEY_LEFT_3, this.txtPasswordLeft.getText());
+		prefs.put(KEY_RIGHT_1, this.txtUrlRight.getText());
+		prefs.put(KEY_RIGHT_2, this.txtUsernameRight.getText());
+		prefs.put(KEY_RIGHT_3, this.txtPasswordRight.getText());
 
 		try {
 			prefs.flush();
@@ -258,9 +302,12 @@ public class ConnectionsView extends ViewPart {
 		IEclipsePreferences prefs = new InstanceScope().getNode("PostgresCompare");
 		// you might want to call prefs.sync() if you're worried about others changing
 		// your settings
-		// this.someStr = prefs.get(KEY1, "default url");
-		this.txtUrlLeft.setText(prefs.get(KEY1, "default url"));
-//		  this.someBool= prefs.getBoolean(KEY2);
+		this.txtUrlLeft.setText(prefs.get(KEY_LEFT_1, "default url"));
+		this.txtUsernameLeft.setText(prefs.get(KEY_LEFT_2, "default url"));
+		this.txtPasswordLeft.setText(prefs.get(KEY_LEFT_3, "default url"));
+		this.txtUrlRight.setText(prefs.get(KEY_RIGHT_1, "default url"));
+		this.txtUsernameRight.setText(prefs.get(KEY_RIGHT_2, "default url"));
+		this.txtPasswordRight.setText(prefs.get(KEY_RIGHT_3, "default url"));
 	}
 
 }
