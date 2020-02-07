@@ -2,7 +2,12 @@ package postgrescompare;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.prefs.BackingStoreException;
+import java.util.prefs.Preferences;
 
+import org.eclipse.core.runtime.preferences.IEclipsePreferences;
+import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
@@ -16,6 +21,7 @@ import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
+import org.eclipse.ui.IMemento;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.IViewSite;
 import org.eclipse.ui.PartInitException;
@@ -30,15 +36,57 @@ public class ConnectionsView extends ViewPart {
 	Text txtUrlLeft;
 	Action addCompareAction;
 	Action addTestConnectionAction;
+	String KEY1 = "urlsleft";
+	IMemento memento;
+
+	@Override
+	public void init(IViewSite site, IMemento memento) throws PartInitException {
+		// TODO Auto-generated method stub
+//		super.init(site, memento);
+		init(site);
+		this.memento = memento; 
+
+	}
+
+	@Override
+	public void saveState(IMemento memento) {
+		// TODO Auto-generated method stub
+//		super.saveState(memento);
+		this.memento = memento.createChild("urlsleft", txtUrlLeft.getText());
+
+	}
+
+	private void restoreState() {
+		if (memento == null) {
+			return;
+		}
+		memento = memento.getChild("urlsleft");
+		if (memento != null) {
+			IMemento descriptors[] = memento.getChildren("descriptor");
+			if (descriptors.length > 0) {
+				ArrayList objList = new ArrayList(descriptors.length);
+				for (int nX = 0; nX < descriptors.length; nX++) {
+					String id = descriptors[nX].getID();
+//					Word word = input.find(id);
+//					if (word != null) {
+//						objList.add(word);
+//					}
+				}
+//				viewer.setSelection(new StructuredSelection(objList));
+			}
+		}
+		memento = null;
+		updateActionEnablement();
+	}
 
 	public ConnectionsView() {
 		super();
 	}
 
-	public void init(IViewSite site) throws PartInitException {
-		super.init(site);
-		// Normally we might do other stuff here.
-	}
+//	public void init(IViewSite site) throws PartInitException {
+//		super.init(site);
+//		// Normally we might do other stuff here.
+//	}
 
 	public void setFocus() {
 		labelLeft1.setFocus();
@@ -118,6 +166,7 @@ public class ConnectionsView extends ViewPart {
 //		});
 		createActions();
 		createToolbar();
+		restoreState();
 	}
 
 	private void saveCstProfile() {
@@ -131,40 +180,43 @@ public class ConnectionsView extends ViewPart {
 			}
 		};
 		addCompareAction.setImageDescriptor(
-			        AbstractUIPlugin.imageDescriptorFromPlugin("PostgresCompare", "icons/twowaycompare_co.gif"));
-		
+				AbstractUIPlugin.imageDescriptorFromPlugin("PostgresCompare", "icons/twowaycompare_co.gif"));
+
 		addTestConnectionAction = new Action("Test Database Connections") {
 			public void run() {
 				testConnections();
 			}
 		};
 		addTestConnectionAction.setImageDescriptor(
-			        AbstractUIPlugin.imageDescriptorFromPlugin("PostgresCompare", "icons/ftpconnecting.gif"));
+				AbstractUIPlugin.imageDescriptorFromPlugin("PostgresCompare", "icons/ftpconnecting.gif"));
 	}
-    
-    /**
-     * Create toolbar.
-     */
-    private void createToolbar() {
-            IToolBarManager mgr = getViewSite().getActionBars().getToolBarManager();
-            mgr.add(addCompareAction);
-            mgr.add(addTestConnectionAction);
-            //mgr.add(deleteItemAction);
-    }
+
+	/**
+	 * Create toolbar.
+	 */
+	private void createToolbar() {
+		IToolBarManager mgr = getViewSite().getActionBars().getToolBarManager();
+		mgr.add(addCompareAction);
+		mgr.add(addTestConnectionAction);
+		// mgr.add(deleteItemAction);
+	}
 
 	private void updateActionEnablement() {
 //        IStructuredSelection sel = 
 //                (IStructuredSelection)viewer.getSelection();
 		// deleteItemAction.setEnabled(sel.size() > 0);
 	}
+
 	private void compare() {
 		System.out.println("compare clicked");
 
 	}
+
 	private void testConnections() {
 		System.out.println("testConnections clicked");
 
 	}
+
 	/**
 	 * Returns the image descriptor with the given relative path.
 	 */
@@ -179,6 +231,29 @@ public class ConnectionsView extends ViewPart {
 			// should not happen
 			return ImageDescriptor.getMissingImageDescriptor();
 		}
+	}
+
+	private void savePluginSettings() {
+		// saves plugin preferences at the workspace level
+		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode("PostgresCompare");
+
+		prefs.put(KEY1, this.txtUrlLeft.getText());
+//		  prefs.put(KEY2, this.someBool);
+
+		try {
+			prefs.flush();
+		} catch (org.osgi.service.prefs.BackingStoreException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void loadPluginSettings() {
+		IEclipsePreferences prefs = new InstanceScope().getNode("PostgresCompare");
+		// you might want to call prefs.sync() if you're worried about others changing
+		// your settings
+		// this.someStr = prefs.get(KEY1, "default url");
+		this.txtUrlLeft.setText(prefs.get(KEY1, "default url"));
+//		  this.someBool= prefs.getBoolean(KEY2);
 	}
 
 }
