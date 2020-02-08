@@ -1,13 +1,25 @@
 package postgrescompare;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLClassLoader;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
+import org.eclipse.emf.common.util.URI;
+import org.eclipse.jdt.internal.ui.packageview.PackageExplorerPart;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
@@ -21,14 +33,24 @@ import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.*;
+import org.eclipse.ui.IEditorDescriptor;
+import org.eclipse.ui.IEditorRegistry;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.IViewSite;
+import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.internal.UIPlugin;
 import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
+import org.osgi.framework.Bundle;
+import org.eclipse.compare.CompareUI;
+import org.eclipse.compare.internal.CompareAction;
+import org.eclipse.core.filesystem.EFS;
+import org.eclipse.core.filesystem.IFileStore;
+import org.eclipse.core.resources.IResource;
+import org.eclipse.ui.ide.IDE;
 
 public class ConnectionsView extends ViewPart {
 	Label labelLeftTitle;
@@ -54,7 +76,13 @@ public class ConnectionsView extends ViewPart {
 	String KEY_RIGHT_1 = "urlright";
 	String KEY_RIGHT_2 = "usernameright";
 	String KEY_RIGHT_3 = "passwordright";
-	IMemento memento;
+	// IMemento memento;
+	String selectedJdbcJarPath;
+	private Text txtAbstract;
+	//URLClassLoader cl;
+//	private int             urlCount = 0; 
+//	private URL[]           fQCNUrls = new URL[10];
+//	private ClassLoader     fQCNLoader = new URLClassLoader ( this.fQCNUrls );
 
 	@Override
 	public void init(IViewSite site, IMemento memento) throws PartInitException {
@@ -66,39 +94,39 @@ public class ConnectionsView extends ViewPart {
 
 	@Override
 	public void saveState(IMemento memento) {
-		this.memento = memento.createChild("urlsleft", txtUrlLeft.getText());
+		// this.memento = memento.createChild("urlsleft", txtUrlLeft.getText());
 		savePluginSettings();
 	}
+
 	@Override
-	public void dispose()
-	{
+	public void dispose() {
 		System.out.println("dispose");
-		//savePluginSettings();
-	  super.dispose();
+		// savePluginSettings();
+		super.dispose();
 	}
 
-	private void restoreState() {
-		if (memento == null) {
-			return;
-		}
-		memento = memento.getChild("urlsleft");
-		if (memento != null) {
-			IMemento descriptors[] = memento.getChildren("descriptor");
-			if (descriptors.length > 0) {
-				ArrayList objList = new ArrayList(descriptors.length);
-				for (int nX = 0; nX < descriptors.length; nX++) {
-					String id = descriptors[nX].getID();
-//					Word word = input.find(id);
-//					if (word != null) {
-//						objList.add(word);
-//					}
-				}
-//				viewer.setSelection(new StructuredSelection(objList));
-			}
-		}
-		memento = null;
-		updateActionEnablement();
-	}
+//	private void restoreState() {
+//		if (memento == null) {
+//			return;
+//		}
+//		memento = memento.getChild("urlsleft");
+//		if (memento != null) {
+//			IMemento descriptors[] = memento.getChildren("descriptor");
+//			if (descriptors.length > 0) {
+//				ArrayList objList = new ArrayList(descriptors.length);
+//				for (int nX = 0; nX < descriptors.length; nX++) {
+//					String id = descriptors[nX].getID();
+////					Word word = input.find(id);
+////					if (word != null) {
+////						objList.add(word);
+////					}
+//				}
+////				viewer.setSelection(new StructuredSelection(objList));
+//			}
+//		}
+//		memento = null;
+//		updateActionEnablement();
+//	}
 
 	public ConnectionsView() {
 		super();
@@ -196,39 +224,153 @@ public class ConnectionsView extends ViewPart {
 		gridDataPasswordR.minimumWidth = 300;
 		txtPasswordRight.setLayoutData(gridDataPasswordR);
 
+		Button btn1 = new Button(baseCanvas, SWT.BORDER);
+		btn1.setText("Load JDBC Driver");
+		btn1.addListener(SWT.Selection, new Listener() {
+			public void handleEvent(Event e) {
+				switch (e.type) {
+				case SWT.Selection:
+					loadJdbcJar(parent);
+					break;
+				}
+			}
+		});
+		
+		txtAbstract = new Text(baseCanvas,  SWT.BORDER);
+		GridData gridDataText = new GridData(GridData.FILL_BOTH);
+		gridDataText.verticalAlignment = SWT.FILL;
+		gridDataText.grabExcessHorizontalSpace = true;
+		txtAbstract.setLayoutData(gridDataText);
 
-//		Canvas buttonCanvas = new Canvas(baseCanvas, SWT.NONE);
-//		GridLayout glButtonCanvas = new GridLayout();
-//		GridData gdButtonCanvas = new GridData();
-//		gdButtonCanvas.horizontalAlignment = SWT.CENTER;
-//		gdButtonCanvas.verticalAlignment = SWT.BEGINNING;
-//		glButtonCanvas.numColumns = 3;
-//		buttonCanvas.setSize(SWT.DEFAULT, 200);
-//
-//		buttonCanvas.setLayoutData(gdButtonCanvas);
-//		buttonCanvas.setLayout(glButtonCanvas);
-//
-//		Button btn1 = new Button(buttonCanvas, SWT.BORDER);
-//		btn1.setText("Test Connection");
-//		btn1.addListener(SWT.Selection, new Listener() {
-//			public void handleEvent(Event e) {
-//				switch (e.type) {
-//				case SWT.Selection:
-//					saveCstProfile();
-//					break;
-//				}
-//			}
-//		});
 		createActions();
 		createToolbar();
-		
-//		restoreState();
+
 		loadPluginSettings();
 	}
 
-	private void saveCstProfile() {
-		System.out.println("btn1 clicked");
+	private void loadJdbcJar(Composite parent) {
+		FileDialog dialog = new FileDialog(parent.getShell(), SWT.OPEN);
+		//dialog.setFilterExtensions(new String[] { "*.html" });
+		dialog.setFilterPath("D:\\Begasoft\\workspaces\\ws4tmp\\substidoc\\libext\\");
+		selectedJdbcJarPath = dialog.open();
+		System.out.println("selected File: " + this.selectedJdbcJarPath);
+
+		try {
+			File jarFile = new File(selectedJdbcJarPath);
+			System.out.println(jarFile.toURI());
+			System.out.println(jarFile.toURL());
+			URL[] urls = new URL[]{ new URL("jar", "", "file:" + selectedJdbcJarPath + "!/")};
+			//URL[] urls = new URL[]{ new URL("jar", "", jarFile.toURI().toURL().toString())};
+			URLClassLoader cl  = URLClassLoader.newInstance(urls, Activator.getDefault().getClass().getClassLoader());
+			Class<?> loadedClass = cl.loadClass("org.postgresql.Driver");
+	        
+//			Constructor<?> constructor = loadedClass.getConstructor();
+//	        Object beanObj = constructor.newInstance();
+//			
+//	        Bundle bundle = Platform.getBundle(Activator.PLUGIN_ID);
+//	        Class myClass = bundle.loadClass("org.postgresql.Driver"); 
+			
+	        try {
+				//addURL(urls[0]);
+				//Class.forName("org.postgresql.Driver");
+				Class.forName("org.postgresql.Driver", false, cl);
+				Connection connection = null;
+				try {
+					connection = DriverManager.getConnection("jdbc:postgresql://127.0.0.1:5432/postgres", "postgres",
+							"postgres");
+				} catch (SQLException e) {
+					System.out.println("Connection Failed! Check output console");
+					e.printStackTrace();
+				}
+
+			} catch (ClassNotFoundException e) {
+				System.out.println("Where is your PostgreSQL JDBC Driver? " + "Include in your library path!");
+				e.printStackTrace();
+			}
+
+			
+		} catch (MalformedURLException e) {
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (IllegalArgumentException e1) {
+			e1.printStackTrace();
+		} catch (SecurityException e1) {
+			e1.printStackTrace();
+		}
+
 	}
+//	public  void addURL ( URL theURL ) throws IOException {
+//	    //CPTest  lclsTest = new CPTest();
+//	    if ( getUrlCount () == 0 ) { 
+//	        getfQCNUrls()[getUrlCount()] = theURL;
+//	        setUrlCount ( 1 );
+//	    }
+//	    else { 
+//	        boolean lisThere = false;
+//	        for (int i = 0; i < getUrlCount(); i++) {
+//	            if (getfQCNUrls()[i].toString().equalsIgnoreCase(theURL.toString())) {
+//	                lisThere = true;
+//	            }
+//	        }
+//	        if ( lisThere ) { 
+//	            System.out.println ( "File URL [" + theURL.toString () + "] already on the CLASSPATH!" );
+//	        }
+//	        else { 
+//	            getfQCNUrls()[getUrlCount()] = theURL;
+//	            setUrlCount ( getUrlCount ()+1 );
+//	        }
+//
+//	    }
+//
+//	    // CLEAR : Null out the classloader...
+//	    this.fQCNLoader = null;
+//	    // BUILD/RE-BUILD : the classloader...
+//	    this.fQCNLoader = new URLClassLoader ( getfQCNUrls(), this.getClass ().getClassLoader () );
+//
+//	    //try {
+//	    //    System.out.println ( "---------------------------------------------------------------------------" );
+//	    //    System.out.println ( "Current Working Directory.............[" + System.getProperty ( "user.dir" ) + "]" );
+//	    //    System.out.println ( "---------------------------------------------------------------------------" );
+//	    //    System.out.println ( "this.classes []! " );
+//	    //    lclsTest.dumpClasses ( this.getClass ().getClassLoader () );
+//	    //    System.out.println ( "---------------------------------------------------------------------------" );
+//	    //
+//	    //    System.out.println ( "---------------------------------------------------------------------------" );
+//	    //    System.out.println ( "File URL [" + theURL.toString () + "] added! " );
+//	    //    lclsTest.dumpClasses ( this.FQCNLoader );
+//	    //    System.out.println ( "---------------------------------------------------------------------------" );
+//
+//	    //    System.out.println ( "---------------------------------------------------------------------------" );
+//	    //    System.out.println ( "ClassLoader.getSystemClassLoader() " );
+//	    //    lclsTest.dumpClasses ( ClassLoader.getSystemClassLoader() );
+//	    //    System.out.println ( "---------------------------------------------------------------------------" );
+//
+//	    //    Class  cls = this.FQCNLoader.loadClass ( "com.lmig.RRFECF.pso.security.nonproduction.CM_RRFECF_development_securitykey" );
+//	    //  Class  cls = Class.forName(theFQCN, false, theClsLoader);
+//	    //    theObjectKey = ( Object )  theClsLoader.loadClass(theFQCN);
+//
+//
+//	    //}
+//	    //catch ( Exception e ) {
+//	    //// TODO Auto-generated catch block
+//	    //    e.printStackTrace();
+//	    //}
+//
+////	    Class sysclass = URLClassLoader.class;
+////	    try {
+////	        Method method = sysclass.getDeclaredMethod("addURL", parameters);
+////	        method.setAccessible(true);
+////	        method.invoke(getfQCNLoader(), new Object[] {
+////	            theURL
+////	        });
+////	    }
+////	    catch (Throwable t) {
+////	        t.printStackTrace();
+////	        throw new IOException(
+////	            "Error, could not add URL to system classloader");
+////	    }
+//	}
 
 	public void createActions() {
 		addCompareAction = new Action("Compare Databases") {
@@ -266,6 +408,20 @@ public class ConnectionsView extends ViewPart {
 
 	private void compare() {
 		System.out.println("compare clicked");
+		File fileToOpen = new File("C:\\dev\\maven-projects\\SeleniumTarget\\target\\test-classes\\UserTest.xml");
+
+		if (fileToOpen.exists() && fileToOpen.isFile()) {
+			IFileStore fileStore = EFS.getLocalFileSystem().getStore(fileToOpen.toURI());
+			IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+
+			try {
+				IDE.openEditorOnFileStore(page, fileStore);
+			} catch (PartInitException e) {
+				// Put your exception handler here if you wish to
+			}
+		} else {
+			// Do something if the file does not exist
+		}
 
 	}
 
@@ -273,12 +429,32 @@ public class ConnectionsView extends ViewPart {
 		System.out.println("testConnections clicked");
 		savePluginSettings();
 		ReadDatabaseStructure rds = new ReadDatabaseStructure();
-		StringBuffer sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(), this.txtUsernameLeft.getText(), this.txtPasswordLeft.getText());
+		StringBuffer sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(), this.txtUsernameLeft.getText(),
+				this.txtPasswordLeft.getText());
 		System.out.println("-- Left Database");
 		System.out.println(sbLeft.toString());
-	}
+		
+		IEditorRegistry registry = PlatformUI.getWorkbench().getEditorRegistry();
+		IEditorDescriptor[] editors = registry.getEditors("filename.txt");
+		for (IEditorDescriptor desc : editors) {
+			System.out.println("editor: " + desc.getId() + "\t" + desc.getLabel());
+		}
+		
+//		ISelection selection = this.txtAbstract.getSelection();
+//		CompareAction compAction = new CompareAction();
+//		compAction.run(selection);
+		URI uri = URI.createPlatformResourceURI("/myProject/folder/deep/myFile.ext", true);
+		
+//		IResource iResource = UriUtils.toIResource(uri);
+//
+//		PackageExplorerPart part= PackageExplorerPart.getFromActivePerspective();
+//		IResource resource = ;
+//
+//		part.selectAndReveal(resource);
 
-	
+		  //UntitledTextFileWizard obj = new UntitledTextFileWizard();
+		
+	}
 
 	private void savePluginSettings() {
 		// saves plugin preferences at the workspace level
@@ -309,5 +485,28 @@ public class ConnectionsView extends ViewPart {
 		this.txtUsernameRight.setText(prefs.get(KEY_RIGHT_2, "default url"));
 		this.txtPasswordRight.setText(prefs.get(KEY_RIGHT_3, "default url"));
 	}
+//	public int getUrlCount() {
+//		return urlCount;
+//	}
+//
+//	public void setUrlCount(int urlCount) {
+//		this.urlCount = urlCount;
+//	}
+//
+//	public URL[] getfQCNUrls() {
+//		return fQCNUrls;
+//	}
+//
+//	public void setfQCNUrls(URL[] fQCNUrls) {
+//		this.fQCNUrls = fQCNUrls;
+//	}
+//
+//	public ClassLoader getfQCNLoader() {
+//		return fQCNLoader;
+//	}
+//
+//	public void setfQCNLoader(ClassLoader fQCNLoader) {
+//		this.fQCNLoader = fQCNLoader;
+//	}
 
 }

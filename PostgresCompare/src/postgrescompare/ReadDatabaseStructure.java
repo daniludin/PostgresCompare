@@ -6,7 +6,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.postgresql.jdbc.PgDatabaseMetaData;
 
 /**
  * This program demonstrates how to get structural information of a database.
@@ -28,7 +27,7 @@ public class ReadDatabaseStructure {
 		StringBuffer result = new StringBuffer();
 		try (Connection conn = DriverManager.getConnection(url, username, password)) {
 
-			PgDatabaseMetaData meta = (PgDatabaseMetaData) conn.getMetaData();
+			DatabaseMetaData meta = (DatabaseMetaData) conn.getMetaData();
 
 			String catalog = null, schemaPattern = null, tableNamePattern = null;
 			String[] types = { "TABLE" };
@@ -122,16 +121,16 @@ public class ReadDatabaseStructure {
 					result.append("\t\tREFERENCES " + rsFk.getString("PKTABLE_SCHEM")).append(".");
 					result.append(rsFk.getString("PKTABLE_NAME"));
 					result.append(" (").append(rsFk.getString("PKCOLUMN_NAME")).append(")").append("\n");
-					if (rsFk.getInt("UPDATE_RULE") == PgDatabaseMetaData.importedKeyNoAction) {
+					if (rsFk.getInt("UPDATE_RULE") == DatabaseMetaData.importedKeyNoAction) {
 						result.append("\t\t\tON UPDATE NO ACTION").append("\n");
 					}
-					else if (rsFk.getInt("UPDATE_RULE") == PgDatabaseMetaData.importedKeyCascade) {
+					else if (rsFk.getInt("UPDATE_RULE") == DatabaseMetaData.importedKeyCascade) {
 						result.append("\t\t\tON UPDATE CASCADE").append("\n");
 					}
-					if (rsFk.getInt("DELETE_RULE") == PgDatabaseMetaData.importedKeyNoAction) {
+					if (rsFk.getInt("DELETE_RULE") == DatabaseMetaData.importedKeyNoAction) {
 						result.append("\t\t\tON DELETE NO ACTION").append("\n");
 					}
-					else if (rsFk.getInt("DELETE_RULE") == PgDatabaseMetaData.importedKeyCascade) {
+					else if (rsFk.getInt("DELETE_RULE") == DatabaseMetaData.importedKeyCascade) {
 						result.append("\t\t\tON DELETE CASCADE").append("\n");
 					}
 					
