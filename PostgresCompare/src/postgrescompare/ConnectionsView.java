@@ -1,7 +1,11 @@
 package postgrescompare;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringBufferInputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -15,6 +19,8 @@ import java.util.ArrayList;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
@@ -41,6 +47,7 @@ import org.eclipse.ui.IViewSite;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.dialogs.ContainerSelectionDialog;
 import org.eclipse.ui.internal.UIPlugin;
 import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
@@ -49,10 +56,16 @@ import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.internal.CompareAction;
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
+import org.eclipse.core.resources.IContainer;
+import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IFolder;
 import org.eclipse.core.resources.IResource;
+import org.eclipse.core.resources.IWorkspaceRoot;
+import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.ui.ide.IDE;
 
 public class ConnectionsView extends ViewPart {
+	Canvas baseCanvas;
 	Label labelLeftTitle;
 	Label labelLeft1;
 	Label labelLeft2;
@@ -70,6 +83,7 @@ public class ConnectionsView extends ViewPart {
 	Text txtPasswordRight;
 	Action addCompareAction;
 	Action addTestConnectionAction;
+	Action addTestAction;
 	String KEY_LEFT_1 = "urlleft";
 	String KEY_LEFT_2 = "usernameleft";
 	String KEY_LEFT_3 = "passwordleft";
@@ -79,7 +93,7 @@ public class ConnectionsView extends ViewPart {
 	// IMemento memento;
 	String selectedJdbcJarPath;
 	private Text txtAbstract;
-	//URLClassLoader cl;
+	// URLClassLoader cl;
 //	private int             urlCount = 0; 
 //	private URL[]           fQCNUrls = new URL[10];
 //	private ClassLoader     fQCNLoader = new URLClassLoader ( this.fQCNUrls );
@@ -143,7 +157,7 @@ public class ConnectionsView extends ViewPart {
 
 	public void createPartControl(Composite parent) {
 
-		Canvas baseCanvas = new Canvas(parent, SWT.FILL);
+		baseCanvas = new Canvas(parent, SWT.FILL);
 		baseCanvas.setBackground(new Color(Display.getDefault(), 0, 239, 239));
 		baseCanvas.setLayout(new GridLayout(2, false));
 
@@ -235,8 +249,8 @@ public class ConnectionsView extends ViewPart {
 				}
 			}
 		});
-		
-		txtAbstract = new Text(baseCanvas,  SWT.BORDER);
+
+		txtAbstract = new Text(baseCanvas, SWT.BORDER);
 		GridData gridDataText = new GridData(GridData.FILL_BOTH);
 		gridDataText.verticalAlignment = SWT.FILL;
 		gridDataText.grabExcessHorizontalSpace = true;
@@ -248,9 +262,118 @@ public class ConnectionsView extends ViewPart {
 		loadPluginSettings();
 	}
 
+	private void testing(Composite parent) {
+		System.out.println("testing clicked");
+		ContainerSelectionDialog dialog = new ContainerSelectionDialog(parent.getShell(),
+				ResourcesPlugin.getWorkspace().getRoot(), true, "Aha");
+		dialog.open();
+		Object[] result = dialog.getResult();
+		for (int i = 0; i < result.length; i++) {
+			IPath path = (IPath) result[i];
+			System.out.println("class: " + path.getClass());
+			IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+			java.net.URI uri = root.findMember((IPath) result[0]).getLocationURI();
+
+			IContainer[] folders = root.findContainersForLocationURI(uri);
+			if (folders != null && folders.length > 0) {
+				IFolder folder = (IFolder) folders[0];
+				IFile fileLeft = folder.getFile(getDatabaseNameLeft() + ".sql");
+				if (!fileLeft.exists()) {
+					try {
+						ReadDatabaseStructure rds = new ReadDatabaseStructure();
+						StringBuffer sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(), this.txtUsernameLeft.getText(),
+								this.txtPasswordLeft.getText());
+						fileLeft.create(new ByteArrayInputStream(sbLeft.toString().getBytes("UTF-8")), true, null);
+					} catch (CoreException e) {
+						e.printStackTrace();
+					} catch (UnsupportedEncodingException e) {
+						e.printStackTrace();
+					}
+				}
+				IFile fileRight = folder.getFile(getDatabaseNameRight() + ".sql");
+				if (!fileRight.exists()) {
+					try {
+						ReadDatabaseStructure rds = new ReadDatabaseStructure();
+						StringBuffer sbLeft = rds.readDbStructure(this.txtUrlRight.getText(), this.txtUsernameRight.getText(),
+								this.txtPasswordRight.getText());
+						fileRight.create(new ByteArrayInputStream(sbLeft.toString().getBytes("UTF-8")), true, null);
+					} catch (CoreException e) {
+						e.printStackTrace();
+					} catch (UnsupportedEncodingException e) {
+						e.printStackTrace();
+					}
+				}
+
+			}
+
+		}
+
+	}
+	private String getDatabaseNameLeft() {
+		String[] bits = txtUrlLeft.getText().split("/");
+		return bits[bits.length-1];
+	}
+	private String getDatabaseNameRight() {
+		String[] bits = txtUrlRight.getText().split("/");
+		return bits[bits.length-1];
+	}
+	private void compare() {
+		System.out.println("compare clicked");
+		// File fileToOpen = new File("C:\\temp\\UserTest.xml");
+		File fileToOpen = new File("C:\\temp\\sometext.txt");
+
+		if (fileToOpen.exists() && fileToOpen.isFile()) {
+			IFileStore fileStore = EFS.getLocalFileSystem().getStore(fileToOpen.toURI());
+			IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
+
+			try {
+				IDE.openEditorOnFileStore(page, fileStore);
+				// IDE.openInternalEditorOnFileStore(page, fileStore);
+				// IDE.openEditor(page, fileToOpen, "tested.editors.MultiPageEditor");
+
+			} catch (PartInitException e) {
+				// Put your exception handler here if you wish to
+			}
+		} else {
+			// Do something if the file does not exist
+		}
+
+	}
+
+	private void testConnections() {
+		System.out.println("testConnections clicked");
+		savePluginSettings();
+		ReadDatabaseStructure rds = new ReadDatabaseStructure();
+		StringBuffer sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(), this.txtUsernameLeft.getText(),
+				this.txtPasswordLeft.getText());
+		System.out.println("-- Left Database");
+		System.out.println(sbLeft.toString());
+
+		IEditorRegistry registry = PlatformUI.getWorkbench().getEditorRegistry();
+		IEditorDescriptor[] editors = registry.getEditors("filename.txt");
+		for (IEditorDescriptor desc : editors) {
+			System.out.println("editor: " + desc.getId() + "\t" + desc.getLabel());
+		}
+
+//		ISelection selection = this.txtAbstract.getSelection();
+//		CompareAction compAction = new CompareAction();
+//		compAction.run(selection);
+		URI uri = URI.createPlatformResourceURI("/myProject/folder/deep/myFile.ext", true);
+
+//		IResource iResource = UriUtils.toIResource(uri);
+//
+//		PackageExplorerPart part= PackageExplorerPart.getFromActivePerspective();
+//		IResource resource = ;
+//
+//		part.selectAndReveal(resource);
+
+		// UntitledTextFileWizard obj = new UntitledTextFileWizard();
+
+	}
+
 	private void loadJdbcJar(Composite parent) {
 		FileDialog dialog = new FileDialog(parent.getShell(), SWT.OPEN);
-		//dialog.setFilterExtensions(new String[] { "*.html" });
+		// dialog.setFilterExtensions(new String[] { "*.html" });
 		dialog.setFilterPath("D:\\Begasoft\\workspaces\\ws4tmp\\substidoc\\libext\\");
 		selectedJdbcJarPath = dialog.open();
 		System.out.println("selected File: " + this.selectedJdbcJarPath);
@@ -259,20 +382,21 @@ public class ConnectionsView extends ViewPart {
 			File jarFile = new File(selectedJdbcJarPath);
 			System.out.println(jarFile.toURI());
 			System.out.println(jarFile.toURL());
-			URL[] urls = new URL[]{ new URL("jar", "", "file:" + selectedJdbcJarPath + "!/")};
-			//URL[] urls = new URL[]{ new URL("jar", "", jarFile.toURI().toURL().toString())};
-			URLClassLoader cl  = URLClassLoader.newInstance(urls, Activator.getDefault().getClass().getClassLoader());
+			URL[] urls = new URL[] { new URL("jar", "", "file:" + selectedJdbcJarPath + "!/") };
+			// URL[] urls = new URL[]{ new URL("jar", "",
+			// jarFile.toURI().toURL().toString())};
+			URLClassLoader cl = URLClassLoader.newInstance(urls, Activator.getDefault().getClass().getClassLoader());
 			Class<?> loadedClass = cl.loadClass("org.postgresql.Driver");
-	        
+
 //			Constructor<?> constructor = loadedClass.getConstructor();
 //	        Object beanObj = constructor.newInstance();
 //			
 //	        Bundle bundle = Platform.getBundle(Activator.PLUGIN_ID);
 //	        Class myClass = bundle.loadClass("org.postgresql.Driver"); 
-			
-	        try {
-				//addURL(urls[0]);
-				//Class.forName("org.postgresql.Driver");
+
+			try {
+				// addURL(urls[0]);
+				// Class.forName("org.postgresql.Driver");
 				Class.forName("org.postgresql.Driver", false, cl);
 				Connection connection = null;
 				try {
@@ -288,7 +412,6 @@ public class ConnectionsView extends ViewPart {
 				e.printStackTrace();
 			}
 
-			
 		} catch (MalformedURLException e) {
 			e.printStackTrace();
 		} catch (ClassNotFoundException e) {
@@ -388,6 +511,14 @@ public class ConnectionsView extends ViewPart {
 		};
 		addTestConnectionAction.setImageDescriptor(
 				AbstractUIPlugin.imageDescriptorFromPlugin("PostgresCompare", "icons/ftpconnecting.gif"));
+
+		addTestAction = new Action("Testing") {
+			public void run() {
+				testing(baseCanvas.getParent());
+			}
+		};
+		addTestAction
+				.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin("PostgresCompare", "icons/test.gif"));
 	}
 
 	/**
@@ -397,6 +528,7 @@ public class ConnectionsView extends ViewPart {
 		IToolBarManager mgr = getViewSite().getActionBars().getToolBarManager();
 		mgr.add(addCompareAction);
 		mgr.add(addTestConnectionAction);
+		mgr.add(addTestAction);
 		// mgr.add(deleteItemAction);
 	}
 
@@ -404,56 +536,6 @@ public class ConnectionsView extends ViewPart {
 //        IStructuredSelection sel = 
 //                (IStructuredSelection)viewer.getSelection();
 		// deleteItemAction.setEnabled(sel.size() > 0);
-	}
-
-	private void compare() {
-		System.out.println("compare clicked");
-		File fileToOpen = new File("C:\\dev\\maven-projects\\SeleniumTarget\\target\\test-classes\\UserTest.xml");
-
-		if (fileToOpen.exists() && fileToOpen.isFile()) {
-			IFileStore fileStore = EFS.getLocalFileSystem().getStore(fileToOpen.toURI());
-			IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-
-			try {
-				IDE.openEditorOnFileStore(page, fileStore);
-			} catch (PartInitException e) {
-				// Put your exception handler here if you wish to
-			}
-		} else {
-			// Do something if the file does not exist
-		}
-
-	}
-
-	private void testConnections() {
-		System.out.println("testConnections clicked");
-		savePluginSettings();
-		ReadDatabaseStructure rds = new ReadDatabaseStructure();
-		StringBuffer sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(), this.txtUsernameLeft.getText(),
-				this.txtPasswordLeft.getText());
-		System.out.println("-- Left Database");
-		System.out.println(sbLeft.toString());
-		
-		IEditorRegistry registry = PlatformUI.getWorkbench().getEditorRegistry();
-		IEditorDescriptor[] editors = registry.getEditors("filename.txt");
-		for (IEditorDescriptor desc : editors) {
-			System.out.println("editor: " + desc.getId() + "\t" + desc.getLabel());
-		}
-		
-//		ISelection selection = this.txtAbstract.getSelection();
-//		CompareAction compAction = new CompareAction();
-//		compAction.run(selection);
-		URI uri = URI.createPlatformResourceURI("/myProject/folder/deep/myFile.ext", true);
-		
-//		IResource iResource = UriUtils.toIResource(uri);
-//
-//		PackageExplorerPart part= PackageExplorerPart.getFromActivePerspective();
-//		IResource resource = ;
-//
-//		part.selectAndReveal(resource);
-
-		  //UntitledTextFileWizard obj = new UntitledTextFileWizard();
-		
 	}
 
 	private void savePluginSettings() {
@@ -478,12 +560,12 @@ public class ConnectionsView extends ViewPart {
 		IEclipsePreferences prefs = new InstanceScope().getNode("PostgresCompare");
 		// you might want to call prefs.sync() if you're worried about others changing
 		// your settings
-		this.txtUrlLeft.setText(prefs.get(KEY_LEFT_1, "default url"));
-		this.txtUsernameLeft.setText(prefs.get(KEY_LEFT_2, "default url"));
-		this.txtPasswordLeft.setText(prefs.get(KEY_LEFT_3, "default url"));
-		this.txtUrlRight.setText(prefs.get(KEY_RIGHT_1, "default url"));
-		this.txtUsernameRight.setText(prefs.get(KEY_RIGHT_2, "default url"));
-		this.txtPasswordRight.setText(prefs.get(KEY_RIGHT_3, "default url"));
+		this.txtUrlLeft.setText(prefs.get(KEY_LEFT_1, "jdbc:postgresql://localhost:5432/postgres1"));
+		this.txtUsernameLeft.setText(prefs.get(KEY_LEFT_2, ""));
+		this.txtPasswordLeft.setText(prefs.get(KEY_LEFT_3, ""));
+		this.txtUrlRight.setText(prefs.get(KEY_RIGHT_1, "jdbc:postgresql://localhost:5432/postgres2"));
+		this.txtUsernameRight.setText(prefs.get(KEY_RIGHT_2, ""));
+		this.txtPasswordRight.setText(prefs.get(KEY_RIGHT_3, ""));
 	}
 //	public int getUrlCount() {
 //		return urlCount;

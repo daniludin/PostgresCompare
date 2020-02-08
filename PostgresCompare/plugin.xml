@@ -71,4 +71,15 @@
 	          class="postgrescompare.ConnectionsView"
 	          icon="icons\sample.png"/>
 	</extension>
+	<extension point="org.eclipse.ui.editors">
+		  <editor
+		        name="Sample Multi-page Editor"
+		        extensions="mpe"
+		        icon="icons/sample.gif"
+		        contributorClass="tested.editors.MultiPageEditorContributor"
+		        class="tested.editors.MultiPageEditor"
+		        id="tested.editors.MultiPageEditor">
+		  </editor>
+	</extension>
+	
 </plugin>
