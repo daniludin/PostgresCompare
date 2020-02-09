@@ -93,6 +93,8 @@ public class ConnectionsView extends ViewPart {
 	ControlDecoration decoUrlLeft;
 	ControlDecoration decoUrlRight;
 
+	Button btnChooseSaveFile;
+
 	Action addCompareAction;
 	Action addTestConnectionAction;
 	Action addTestAction;
@@ -256,13 +258,16 @@ public class ConnectionsView extends ViewPart {
 			public void handleEvent(Event e) {
 				switch (e.type) {
 				case SWT.Selection:
-					//testing();
+					// testing();
 					break;
 				}
 			}
 		});
 		btnCompare.addSelectionListener(new MySelectionAdapter(getSite().getShell()));
-		
+
+		btnChooseSaveFile = new Button(baseCanvas, SWT.CHECK);
+		btnChooseSaveFile.setText("Add results to Project");
+
 		Button btnLoadDriver = new Button(baseCanvas, SWT.BORDER);
 		btnLoadDriver.setText("Load JDBC Driver");
 		btnLoadDriver.addListener(SWT.Selection, new Listener() {
@@ -289,15 +294,16 @@ public class ConnectionsView extends ViewPart {
 	}
 
 	private void displayConnectionErrorLeft() {
-		decoUrlLeft =  new ControlDecoration(txtUrlLeft, SWT.TOP | SWT.LEFT);
+		decoUrlLeft = new ControlDecoration(txtUrlLeft, SWT.TOP | SWT.LEFT);
 		decoUrlLeft.setDescriptionText("Connection error");
 		Image image = FieldDecorationRegistry.getDefault().getFieldDecoration(FieldDecorationRegistry.DEC_ERROR)
 				.getImage();
 		decoUrlLeft.setImage(image);
 
 	}
+
 	private void displayConnectionErrorRight() {
-		decoUrlRight =  new ControlDecoration(txtUrlRight, SWT.TOP | SWT.LEFT);
+		decoUrlRight = new ControlDecoration(txtUrlRight, SWT.TOP | SWT.LEFT);
 		decoUrlRight.setDescriptionText("Connection error");
 		Image image = FieldDecorationRegistry.getDefault().getFieldDecoration(FieldDecorationRegistry.DEC_ERROR)
 				.getImage();
@@ -307,91 +313,93 @@ public class ConnectionsView extends ViewPart {
 
 	private void testing(Action action) {
 		System.out.println("testing clicked");
-		ContainerSelectionDialog dialog = new ContainerSelectionDialog(getSite().getShell(),
-				ResourcesPlugin.getWorkspace().getRoot(), true, "Aha");
-		dialog.open();
-		Object[] result = dialog.getResult();
-		if (result == null) {
-			return;
-		}
 		boolean noConnectionErrorLeft = true;
 		boolean noConnectionErrorRight = true;
-		for (int i = 0; i < result.length; i++) {
-			IPath path = (IPath) result[i];
-			System.out.println("class: " + path.getClass());
-			IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
-			java.net.URI uri = root.findMember((IPath) result[0]).getLocationURI();
+		StringBuffer sbLeft = null;
+		StringBuffer sbRight = null;
 
-			IContainer[] folders = root.findContainersForLocationURI(uri);
-			if (folders != null && folders.length > 0) {
-				IFolder folder = (IFolder) folders[0];
-				StringBuffer sbLeft = null;
-				StringBuffer sbRight = null;
-				
-				IFile fileLeft = folder.getFile(getDatabaseNameLeft() + ".sql");
-				if (!fileLeft.exists()) {
-					try {
-						ReadDatabaseStructure rds = new ReadDatabaseStructure();
-						sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(),
-								this.txtUsernameLeft.getText(), this.txtPasswordLeft.getText());
-						fileLeft.create(new ByteArrayInputStream(sbLeft.toString().getBytes("UTF-8")), true, null);
-					} catch (CoreException e) {
-						e.printStackTrace();
-					} catch (UnsupportedEncodingException e) {
-						e.printStackTrace();
-					} catch (SQLException e) {
-						displayConnectionErrorLeft();
-						noConnectionErrorLeft = false;
-					} 
-				}
-				IFile fileRight = folder.getFile(getDatabaseNameRight() + ".sql");
-				if (!fileRight.exists()) {
-					try {
-						ReadDatabaseStructure rds = new ReadDatabaseStructure();
-						sbRight = rds.readDbStructure(this.txtUrlRight.getText(),
-								this.txtUsernameRight.getText(), this.txtPasswordRight.getText());
-						fileRight.create(new ByteArrayInputStream(sbRight.toString().getBytes("UTF-8")), true, null);
-					} catch (CoreException e) {
-						e.printStackTrace();
-					} catch (UnsupportedEncodingException e) {
-						e.printStackTrace();
-					} catch (SQLException e) {
-						displayConnectionErrorRight();
-						noConnectionErrorRight = false;
-					} 
-				}
-				
-//				CompareConfiguration compareConfig = new CompareConfiguration();				
-//				CompareEditorInput input = new CompareEditorInput(compareConfig) {
-//					
-//					@Override
-//					protected Object prepareInput(IProgressMonitor arg0) throws InvocationTargetException, InterruptedException {
-//						// TODO Auto-generated method stub
-//						return null;
-//					}
-//				};
-				
-				CompareEditorAction compareAction = new CompareEditorAction(sbLeft.toString(), sbRight.toString());
-				compareAction.run(action);
+		try {
+			ReadDatabaseStructure rds = new ReadDatabaseStructure();
+			sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(), this.txtUsernameLeft.getText(),
+					this.txtPasswordLeft.getText());
+		} catch (SQLException e1) {
+			displayConnectionErrorLeft();
+			noConnectionErrorLeft = false;
+		}
+		try {
+			ReadDatabaseStructure rdsRight = new ReadDatabaseStructure();
+			sbRight = rdsRight.readDbStructure(this.txtUrlRight.getText(), this.txtUsernameRight.getText(),
+					this.txtPasswordRight.getText());
+		} catch (SQLException e1) {
+			displayConnectionErrorRight();
+			noConnectionErrorRight = false;
+		}
+		
+		boolean optionSaveFiles = this.btnChooseSaveFile.getSelection();
+		if (optionSaveFiles) {
+			ContainerSelectionDialog dialog = new ContainerSelectionDialog(getSite().getShell(),
+					ResourcesPlugin.getWorkspace().getRoot(), true, "Aha");
+			dialog.open();
+			Object[] result = dialog.getResult();
+			if (result == null) {
+				return;
 			}
-			try {
-				if (noConnectionErrorLeft&& this.decoUrlLeft != null) {
-					this.decoUrlLeft.hide();
+
+
+			for (int i = 0; i < result.length; i++) {
+				IPath path = (IPath) result[i];
+				System.out.println("class: " + path.getClass());
+				IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
+				java.net.URI uri = root.findMember((IPath) result[0]).getLocationURI();
+
+				IContainer[] folders = root.findContainersForLocationURI(uri);
+				if (folders != null && folders.length > 0) {
+					IFolder folder = (IFolder) folders[0];
+
+					IFile fileLeft = folder.getFile(getDatabaseNameLeft() + ".sql");
+					if (!fileLeft.exists()) {
+						try {
+							fileLeft.create(new ByteArrayInputStream(sbLeft.toString().getBytes("UTF-8")), true, null);
+						} catch (CoreException e) {
+							e.printStackTrace();
+						} catch (UnsupportedEncodingException e) {
+							e.printStackTrace();
+						}
+					}
+					IFile fileRight = folder.getFile(getDatabaseNameRight() + ".sql");
+					if (!fileRight.exists()) {
+						try {
+							fileRight.create(new ByteArrayInputStream(sbRight.toString().getBytes("UTF-8")), true,
+									null);
+						} catch (CoreException e) {
+							e.printStackTrace();
+						} catch (UnsupportedEncodingException e) {
+							e.printStackTrace();
+						}
+					}
+
 				}
-				if (noConnectionErrorRight && this.decoUrlRight != null) {
-					this.decoUrlRight.hide();
-				}
-			} catch (Exception e) {
-				e.printStackTrace();
 			}
 		}
+		try {
+			if (noConnectionErrorLeft && this.decoUrlLeft != null) {
+				this.decoUrlLeft.hide();
+			}
+			if (noConnectionErrorRight && this.decoUrlRight != null) {
+				this.decoUrlRight.hide();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		CompareEditorAction compareAction = new CompareEditorAction(sbLeft.toString(), sbRight.toString());
+		compareAction.run(action);
 	}
 
 //	private String getFileName() {
 //		DateFormat df = new DateFormat();
 //		df.se
 //	}
-	
+
 	private String getDatabaseNameLeft() {
 		String[] bits = txtUrlLeft.getText().split("/");
 		return bits[bits.length - 1];
@@ -430,7 +438,7 @@ public class ConnectionsView extends ViewPart {
 		savePluginSettings();
 		ReadDatabaseStructure rds = new ReadDatabaseStructure();
 		StringBuffer sbLeft = null;
-		 try {
+		try {
 			sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(), this.txtUsernameLeft.getText(),
 					this.txtPasswordLeft.getText());
 			System.out.println("-- Left Database");
@@ -647,8 +655,6 @@ public class ConnectionsView extends ViewPart {
 //		String[] vorschlaege = new String[]{"Vorschlag1", "Vorschlag2"};
 //		prefs.put("vorschlaege", vorschlaege);
 
-		
-		
 		try {
 			prefs.flush();
 		} catch (org.osgi.service.prefs.BackingStoreException e) {
