@@ -262,8 +262,12 @@ public class ConnectionsView extends ViewPart {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				decoUrlLeft.hide();
-				decoUrlRight.hide();
+				if (decoUrlLeft != null) {
+					decoUrlLeft.hide();
+				}
+				if (decoUrlRight != null) {
+					decoUrlRight.hide();
+				}
 				if (saveFileToProject) {
 
 					ContainerSelectionDialog dialog = new ContainerSelectionDialog(getSite().getShell(),
