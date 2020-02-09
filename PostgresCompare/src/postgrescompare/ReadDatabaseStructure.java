@@ -53,13 +53,16 @@ public class ReadDatabaseStructure {
 			while (rsTables.next()) {
 				String tableName = rsTables.getString(3);
 				String tableSchema = rsTables.getString("TABLE_SCHEM");
+				String tableType = rsTables.getString("TABLE_TYPE");
 				if (false && !tableName.equals("member_praxis")) {
 					continue;
 				}
 				result.append(NL);
 				result.append(tableSchema + "." + tableName).append(NL);
 				result.append(listAttributes(meta, catalog, schemaPattern, tableName));
-				result.append(listPrimaryKeys(meta, catalog, tableSchema, tableName));
+				if (tableType.equals("TABLE")) {
+					result.append(listPrimaryKeys(meta, catalog, tableSchema, tableName));					
+				}
 				result.append(listUniqueConstraints(meta, conn, catalog, tableSchema, tableName));
 				result.append(listForeignKeys(meta, catalog, schemaPattern, tableName));
 

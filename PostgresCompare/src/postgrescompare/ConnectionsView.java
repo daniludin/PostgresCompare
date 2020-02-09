@@ -23,7 +23,10 @@ import java.util.prefs.Preferences;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.emf.common.util.URI;
@@ -32,6 +35,7 @@ import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.fieldassist.ControlDecoration;
 import org.eclipse.jface.fieldassist.FieldDecorationRegistry;
 import org.eclipse.jface.resource.ImageDescriptor;
@@ -39,6 +43,12 @@ import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.BusyIndicator;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.SelectionAdapter;
+import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.FillLayout;
@@ -96,80 +106,52 @@ public class ConnectionsView extends ViewPart {
 	Button btnChooseSaveFile;
 
 	Action addCompareAction;
-	Action addTestConnectionAction;
-	Action addTestAction;
 	String KEY_LEFT_1 = "urlleft";
 	String KEY_LEFT_2 = "usernameleft";
 	String KEY_LEFT_3 = "passwordleft";
 	String KEY_RIGHT_1 = "urlright";
 	String KEY_RIGHT_2 = "usernameright";
 	String KEY_RIGHT_3 = "passwordright";
-	// IMemento memento;
 	String selectedJdbcJarPath;
 	private Text txtAbstract;
-	// URLClassLoader cl;
-//	private int             urlCount = 0; 
-//	private URL[]           fQCNUrls = new URL[10];
-//	private ClassLoader     fQCNLoader = new URLClassLoader ( this.fQCNUrls );
+	String urlLeft;
+	String userLeft;
+	String pwLeft;
+	String urlRight;
+	String userRight;
+	String pwRight;
+	private boolean saveFileToProject;
+	StringBuffer sbLeft = null;
+	StringBuffer sbRight = null;
+	
 
 	@Override
 	public void init(IViewSite site, IMemento memento) throws PartInitException {
 		super.init(site, memento);
 		System.out.println("init");
-//		init(site);
-//		this.memento = memento; 
 	}
 
 	@Override
 	public void saveState(IMemento memento) {
-		// this.memento = memento.createChild("urlsleft", txtUrlLeft.getText());
 		savePluginSettings();
 	}
 
 	@Override
 	public void dispose() {
 		System.out.println("dispose");
-		// savePluginSettings();
 		super.dispose();
 	}
-
-//	private void restoreState() {
-//		if (memento == null) {
-//			return;
-//		}
-//		memento = memento.getChild("urlsleft");
-//		if (memento != null) {
-//			IMemento descriptors[] = memento.getChildren("descriptor");
-//			if (descriptors.length > 0) {
-//				ArrayList objList = new ArrayList(descriptors.length);
-//				for (int nX = 0; nX < descriptors.length; nX++) {
-//					String id = descriptors[nX].getID();
-////					Word word = input.find(id);
-////					if (word != null) {
-////						objList.add(word);
-////					}
-//				}
-////				viewer.setSelection(new StructuredSelection(objList));
-//			}
-//		}
-//		memento = null;
-//		updateActionEnablement();
-//	}
 
 	public ConnectionsView() {
 		super();
 	}
-
-//	public void init(IViewSite site) throws PartInitException {
-//		super.init(site);
-//		// Normally we might do other stuff here.
-//	}
 
 	public void setFocus() {
 		labelLeft1.setFocus();
 	}
 
 	public void createPartControl(Composite parent) {
+		createActions();
 
 		baseCanvas = new Canvas(parent, SWT.FILL);
 		baseCanvas.setBackground(new Color(Display.getDefault(), 0, 239, 239));
@@ -192,9 +174,9 @@ public class ConnectionsView extends ViewPart {
 		gridDataTextL.widthHint = 300;
 		gridDataTextL.minimumWidth = 300;
 		txtUrlLeft.setLayoutData(gridDataTextL);
-
 		labelLeft2 = new Label(baseCanvas, 0);
 		labelLeft2.setText("Username");
+		txtUrlLeft.addModifyListener(listenerUrlLeft);
 
 		txtUsernameLeft = new Text(baseCanvas, SWT.BORDER);
 		GridData gridDataUsernameL = new GridData(GridData.BEGINNING);
@@ -202,6 +184,7 @@ public class ConnectionsView extends ViewPart {
 		gridDataUsernameL.widthHint = 300;
 		gridDataUsernameL.minimumWidth = 300;
 		txtUsernameLeft.setLayoutData(gridDataUsernameL);
+		txtUsernameLeft.addModifyListener(listenerUrlLeft);
 
 		labelLeft3 = new Label(baseCanvas, 0);
 		labelLeft3.setText("Passwort");
@@ -212,6 +195,7 @@ public class ConnectionsView extends ViewPart {
 		gridDataPasswordL.widthHint = 300;
 		gridDataPasswordL.minimumWidth = 300;
 		txtPasswordLeft.setLayoutData(gridDataPasswordL);
+		txtPasswordLeft.addModifyListener(listenerUrlLeft);
 
 		// Database B
 		labelRightTitle = new Label(baseCanvas, 0);
@@ -231,6 +215,7 @@ public class ConnectionsView extends ViewPart {
 		gridDataTextR.widthHint = 300;
 		gridDataTextR.minimumWidth = 300;
 		txtUrlRight.setLayoutData(gridDataTextR);
+		txtUrlRight.addModifyListener(listenerUrlLeft);
 
 		labelRight2 = new Label(baseCanvas, 0);
 		labelRight2.setText("Username");
@@ -241,6 +226,7 @@ public class ConnectionsView extends ViewPart {
 		gridDataUsernameR.widthHint = 300;
 		gridDataUsernameR.minimumWidth = 300;
 		txtUsernameRight.setLayoutData(gridDataUsernameR);
+		txtUsernameRight.addModifyListener(listenerUrlLeft);
 
 		labelRight3 = new Label(baseCanvas, 0);
 		labelRight3.setText("Passwort");
@@ -251,6 +237,7 @@ public class ConnectionsView extends ViewPart {
 		gridDataPasswordR.widthHint = 300;
 		gridDataPasswordR.minimumWidth = 300;
 		txtPasswordRight.setLayoutData(gridDataPasswordR);
+		txtPasswordRight.addModifyListener(listenerUrlLeft);
 
 		Button btnCompare = new Button(baseCanvas, SWT.BORDER);
 		btnCompare.setText("Compare");
@@ -258,16 +245,55 @@ public class ConnectionsView extends ViewPart {
 			public void handleEvent(Event e) {
 				switch (e.type) {
 				case SWT.Selection:
-					// testing();
+					compareDatabases(addCompareAction, 
+							txtUrlLeft.getText(), 
+							txtUsernameLeft.getText(), 
+							txtPasswordLeft.getText(), 
+							txtUrlRight.getText(), 
+							txtUsernameRight.getText(), 
+							txtPasswordRight.getText());
 					break;
 				}
 			}
 		});
-		btnCompare.addSelectionListener(new MySelectionAdapter(getSite().getShell()));
+		//btnCompare.addSelectionListener(new MySelectionAdapter(getSite().getShell()));
+		btnCompare.addSelectionListener(new SelectionAdapter() {
 
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+				// TODO Auto-generated method stub
+				//super.widgetSelected(e);
+		         
+				Job job = new Job("First Job") {
+		            @Override
+		            protected IStatus run(IProgressMonitor monitor) {
+	
+		            	//doLongThing();
+						compareDatabases(addCompareAction,  
+								getUrlLeft(), 
+								getUserLeft(), 
+								getPwLeft(), 
+								getUrlRight(), 
+								getUserRight(), 
+								getPwRight());		                
+						syncWithUi();
+		                // use this to open a Shell in the UI thread
+		                return Status.OK_STATUS;
+		            }
+
+		        };
+		        job.setUser(true);
+		        job.schedule();
+
+			}
+			
+		});
+		
+		
 		btnChooseSaveFile = new Button(baseCanvas, SWT.CHECK);
 		btnChooseSaveFile.setText("Add results to Project");
-
+		btnChooseSaveFile.addSelectionListener(listenerOption);
+		
 		Button btnLoadDriver = new Button(baseCanvas, SWT.BORDER);
 		btnLoadDriver.setText("Load JDBC Driver");
 		btnLoadDriver.addListener(SWT.Selection, new Listener() {
@@ -287,11 +313,59 @@ public class ConnectionsView extends ViewPart {
 		gridDataText.horizontalSpan = 2;
 		txtAbstract.setLayoutData(gridDataText);
 
-		createActions();
-		createToolbar();
+		//createToolbar();
 
 		loadPluginSettings();
 	}
+	ModifyListener listenerUrlLeft = new ModifyListener() {
+		@Override
+		public void modifyText(ModifyEvent arg0) {
+
+			setUrlLeft(txtUrlLeft.getText());
+			setUserLeft(txtUsernameLeft.getText());
+			setPwLeft(txtPasswordLeft.getText());
+			setUrlRight(txtUrlRight.getText());
+			setUserRight(txtUsernameRight.getText());
+			setPwRight(txtPasswordRight.getText());
+		}
+	};
+	SelectionListener listenerOption = new SelectionListener() {
+		
+		@Override
+		public void widgetSelected(SelectionEvent event) {
+			if (btnChooseSaveFile.getSelection()) {
+				setSaveFileToProject(true);
+			} else {
+				setSaveFileToProject(false);				
+			}
+		}
+		
+		@Override
+		public void widgetDefaultSelected(SelectionEvent arg0) {
+			// TODO Auto-generated method stub
+			
+		}
+	};
+    private void syncWithUi() {
+        Display.getDefault().asyncExec(new Runnable() {
+            public void run() {
+                MessageDialog.openInformation(getSite().getShell(), "Your Popup ",
+                        "Your job has finished.");
+            }
+        });
+
+    }
+    private void doLongThing() {
+        for (int i = 0; i < 10; i++) {
+            try {
+                // We simulate a long running operation here
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("Doing something");
+        }
+    }
 
 	private void displayConnectionErrorLeft() {
 		decoUrlLeft = new ControlDecoration(txtUrlLeft, SWT.TOP | SWT.LEFT);
@@ -311,34 +385,37 @@ public class ConnectionsView extends ViewPart {
 
 	}
 
-	private void testing(Action action) {
+	private void compareDatabases(Action action, String urlL, String userL, String pwL, String urlR, String userR, String pwR) {
 		System.out.println("testing clicked");
 		boolean noConnectionErrorLeft = true;
 		boolean noConnectionErrorRight = true;
-		StringBuffer sbLeft = null;
-		StringBuffer sbRight = null;
 
 		try {
 			ReadDatabaseStructure rds = new ReadDatabaseStructure();
-			sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(), this.txtUsernameLeft.getText(),
-					this.txtPasswordLeft.getText());
+			sbLeft = rds.readDbStructure(urlL, userL, pwL);
 		} catch (SQLException e1) {
-			displayConnectionErrorLeft();
+	        Display.getDefault().asyncExec(new Runnable() {
+	            public void run() {
+	            	displayConnectionErrorLeft();
+	            }
+	        });
 			noConnectionErrorLeft = false;
 		}
 		try {
 			ReadDatabaseStructure rdsRight = new ReadDatabaseStructure();
-			sbRight = rdsRight.readDbStructure(this.txtUrlRight.getText(), this.txtUsernameRight.getText(),
-					this.txtPasswordRight.getText());
+			sbRight = rdsRight.readDbStructure(urlR, userR, pwR);
 		} catch (SQLException e1) {
-			displayConnectionErrorRight();
+	        Display.getDefault().asyncExec(new Runnable() {
+	            public void run() {
+	            	displayConnectionErrorRight();
+	            }
+	        });
 			noConnectionErrorRight = false;
 		}
 		
-		boolean optionSaveFiles = this.btnChooseSaveFile.getSelection();
-		if (optionSaveFiles) {
+		if (isSaveFileToProject()) {
 			ContainerSelectionDialog dialog = new ContainerSelectionDialog(getSite().getShell(),
-					ResourcesPlugin.getWorkspace().getRoot(), true, "Aha");
+					ResourcesPlugin.getWorkspace().getRoot(), true, "Select a folder");
 			dialog.open();
 			Object[] result = dialog.getResult();
 			if (result == null) {
@@ -383,16 +460,29 @@ public class ConnectionsView extends ViewPart {
 		}
 		try {
 			if (noConnectionErrorLeft && this.decoUrlLeft != null) {
-				this.decoUrlLeft.hide();
+		        Display.getDefault().asyncExec(new Runnable() {
+		            public void run() {
+						decoUrlLeft.hide();
+		            }
+		        });
+
 			}
 			if (noConnectionErrorRight && this.decoUrlRight != null) {
-				this.decoUrlRight.hide();
+		        Display.getDefault().asyncExec(new Runnable() {
+		            public void run() {
+						decoUrlRight.hide();
+		            }
+		        });
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		CompareEditorAction compareAction = new CompareEditorAction(sbLeft.toString(), sbRight.toString());
-		compareAction.run(action);
+        Display.getDefault().asyncExec(new Runnable() {
+            public void run() {
+        		CompareEditorAction compareAction = new CompareEditorAction(sbLeft.toString(), sbRight.toString());
+        		compareAction.run(action);
+            }
+        });
 	}
 
 //	private String getFileName() {
@@ -453,9 +543,6 @@ public class ConnectionsView extends ViewPart {
 			System.out.println("editor: " + desc.getId() + "\t" + desc.getLabel());
 		}
 
-//		ISelection selection = this.txtAbstract.getSelection();
-//		CompareAction compAction = new CompareAction();
-//		compAction.run(selection);
 		URI uri = URI.createPlatformResourceURI("/myProject/folder/deep/myFile.ext", true);
 
 //		IResource iResource = UriUtils.toIResource(uri);
@@ -597,49 +684,22 @@ public class ConnectionsView extends ViewPart {
 //	}
 
 	public void createActions() {
-		addCompareAction = new Action("Compare Databases") {
-			public void run() {
-				compare();
-			}
-		};
-		addCompareAction.setImageDescriptor(
-				AbstractUIPlugin.imageDescriptorFromPlugin("PostgresCompare", "icons/twowaycompare_co.gif"));
 
-		addTestConnectionAction = new Action("Test Database Connections") {
+		addCompareAction = new Action("Testing") {
 			public void run() {
-				testConnections();
+				compareDatabases(addCompareAction,  
+						getUrlLeft(), 
+						getUserLeft(), 
+						getPwLeft(), 
+						getUrlRight(), 
+						getUserRight(), 
+						getPwRight());		                
 			}
 		};
-		addTestConnectionAction.setImageDescriptor(
-				AbstractUIPlugin.imageDescriptorFromPlugin("PostgresCompare", "icons/ftpconnecting.gif"));
-
-		addTestAction = new Action("Testing") {
-			public void run() {
-				testing(this);
-//				CompareEditorAction compareAction = new CompareEditorAction("hahahh faga","gagggew gagg");
-//				compareAction.run(this);
-			}
-		};
-		addTestAction
+		addCompareAction
 				.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin("PostgresCompare", "icons/test.gif"));
 	}
 
-	/**
-	 * Create toolbar.
-	 */
-	private void createToolbar() {
-		IToolBarManager mgr = getViewSite().getActionBars().getToolBarManager();
-		mgr.add(addCompareAction);
-		mgr.add(addTestConnectionAction);
-		mgr.add(addTestAction);
-		// mgr.add(deleteItemAction);
-	}
-
-	private void updateActionEnablement() {
-//        IStructuredSelection sel = 
-//                (IStructuredSelection)viewer.getSelection();
-		// deleteItemAction.setEnabled(sel.size() > 0);
-	}
 
 	private void savePluginSettings() {
 		// saves plugin preferences at the workspace level
@@ -673,28 +733,60 @@ public class ConnectionsView extends ViewPart {
 		this.txtUsernameRight.setText(prefs.get(KEY_RIGHT_2, ""));
 		this.txtPasswordRight.setText(prefs.get(KEY_RIGHT_3, ""));
 	}
-//	public int getUrlCount() {
-//		return urlCount;
-//	}
-//
-//	public void setUrlCount(int urlCount) {
-//		this.urlCount = urlCount;
-//	}
-//
-//	public URL[] getfQCNUrls() {
-//		return fQCNUrls;
-//	}
-//
-//	public void setfQCNUrls(URL[] fQCNUrls) {
-//		this.fQCNUrls = fQCNUrls;
-//	}
-//
-//	public ClassLoader getfQCNLoader() {
-//		return fQCNLoader;
-//	}
-//
-//	public void setfQCNLoader(ClassLoader fQCNLoader) {
-//		this.fQCNLoader = fQCNLoader;
-//	}
+
+	public String getUrlLeft() {
+		return urlLeft;
+	}
+
+	public void setUrlLeft(String urlLeft) {
+		this.urlLeft = urlLeft;
+	}
+
+	public String getUserLeft() {
+		return userLeft;
+	}
+
+	public void setUserLeft(String userLeft) {
+		this.userLeft = userLeft;
+	}
+
+	public String getPwLeft() {
+		return pwLeft;
+	}
+
+	public void setPwLeft(String pwLeft) {
+		this.pwLeft = pwLeft;
+	}
+
+	public String getUrlRight() {
+		return urlRight;
+	}
+
+	public void setUrlRight(String urlRight) {
+		this.urlRight = urlRight;
+	}
+
+	public String getUserRight() {
+		return userRight;
+	}
+
+	public void setUserRight(String userRight) {
+		this.userRight = userRight;
+	}
+
+	public String getPwRight() {
+		return pwRight;
+	}
+
+	public void setPwRight(String pwRight) {
+		this.pwRight = pwRight;
+	}
+	public boolean isSaveFileToProject() {
+		return saveFileToProject;
+	}
+
+	public void setSaveFileToProject(boolean saveFileToProject) {
+		this.saveFileToProject = saveFileToProject;
+	}
 
 }
