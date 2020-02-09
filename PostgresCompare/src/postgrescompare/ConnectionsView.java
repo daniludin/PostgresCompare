@@ -15,6 +15,7 @@ import java.net.URLClassLoader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
@@ -336,7 +337,6 @@ public class ConnectionsView extends ViewPart {
 						noConnectionErrorRight = false;
 					} 
 				}
-
 			}
 			try {
 				if (noConnectionErrorLeft&& this.decoUrlLeft != null) {
@@ -351,6 +351,11 @@ public class ConnectionsView extends ViewPart {
 		}
 	}
 
+//	private String getFileName() {
+//		DateFormat df = new DateFormat();
+//		df.se
+//	}
+	
 	private String getDatabaseNameLeft() {
 		String[] bits = txtUrlLeft.getText().split("/");
 		return bits[bits.length - 1];
