@@ -257,6 +257,7 @@ public class ConnectionsView extends ViewPart {
 				}
 			}
 		});
+		btn1.addSelectionListener(new MySelectionAdapter(getSite().getShell()));
 
 		txtAbstract = new Text(baseCanvas, SWT.BORDER);
 		GridData gridDataText = new GridData(GridData.FILL_BOTH);
@@ -287,12 +288,15 @@ public class ConnectionsView extends ViewPart {
 
 	}
 
-	private void testing(Composite parent) {
+	private void testing() {
 		System.out.println("testing clicked");
-		ContainerSelectionDialog dialog = new ContainerSelectionDialog(parent.getShell(),
+		ContainerSelectionDialog dialog = new ContainerSelectionDialog(getSite().getShell(),
 				ResourcesPlugin.getWorkspace().getRoot(), true, "Aha");
 		dialog.open();
 		Object[] result = dialog.getResult();
+		if (result == null) {
+			return;
+		}
 		boolean noConnectionErrorLeft = true;
 		boolean noConnectionErrorRight = true;
 		for (int i = 0; i < result.length; i++) {
@@ -430,6 +434,9 @@ public class ConnectionsView extends ViewPart {
 		// dialog.setFilterExtensions(new String[] { "*.html" });
 		dialog.setFilterPath("D:\\Begasoft\\workspaces\\ws4tmp\\substidoc\\libext\\");
 		selectedJdbcJarPath = dialog.open();
+		if (selectedJdbcJarPath == null) {
+			return;
+		}
 		System.out.println("selected File: " + this.selectedJdbcJarPath);
 
 		try {
@@ -568,7 +575,7 @@ public class ConnectionsView extends ViewPart {
 
 		addTestAction = new Action("Testing") {
 			public void run() {
-				testing(baseCanvas.getParent());
+				testing();
 			}
 		};
 		addTestAction
