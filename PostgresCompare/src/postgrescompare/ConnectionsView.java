@@ -303,6 +303,7 @@ public class ConnectionsView extends ViewPart {
 			IContainer[] folders = root.findContainersForLocationURI(uri);
 			if (folders != null && folders.length > 0) {
 				IFolder folder = (IFolder) folders[0];
+				
 				IFile fileLeft = folder.getFile(getDatabaseNameLeft() + ".sql");
 				if (!fileLeft.exists()) {
 					try {
@@ -337,11 +338,15 @@ public class ConnectionsView extends ViewPart {
 				}
 
 			}
-			if (noConnectionErrorLeft) {
-				this.decoUrlLeft.hide();
-			}
-			if (noConnectionErrorRight) {
-				this.decoUrlRight.hide();
+			try {
+				if (noConnectionErrorLeft&& this.decoUrlLeft != null) {
+					this.decoUrlLeft.hide();
+				}
+				if (noConnectionErrorRight && this.decoUrlRight != null) {
+					this.decoUrlRight.hide();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
 		}
 	}
