@@ -302,7 +302,7 @@ public class ConnectionsView extends ViewPart {
 		btnChooseSaveFile = new Button(baseCanvas, SWT.CHECK);
 		btnChooseSaveFile.setText("Add results to Project");
 		btnChooseSaveFile.addSelectionListener(listenerOption);
-
+		/*
 		Button btnLoadDriver = new Button(baseCanvas, SWT.BORDER);
 		btnLoadDriver.setText("Load JDBC Driver");
 		btnLoadDriver.addListener(SWT.Selection, new Listener() {
@@ -321,7 +321,7 @@ public class ConnectionsView extends ViewPart {
 		gridDataText.grabExcessHorizontalSpace = true;
 		gridDataText.horizontalSpan = 2;
 		txtAbstract.setLayoutData(gridDataText);
-
+		 */
 		// createToolbar();
 
 		loadPluginSettings();
@@ -403,7 +403,9 @@ public class ConnectionsView extends ViewPart {
 			sbLeft = rds.readDbStructure(urlL, userL, pwL);
 			Display.getDefault().asyncExec(new Runnable() {
 				public void run() {
-					decoUrlLeft.hide();
+					if (decoUrlLeft != null) {
+						decoUrlLeft.hide();
+					}
 				}
 			});
 
@@ -421,7 +423,9 @@ public class ConnectionsView extends ViewPart {
 			sbRight = rdsRight.readDbStructure(urlR, userR, pwR);
 			Display.getDefault().asyncExec(new Runnable() {
 				public void run() {
-					decoUrlRight.hide();
+					if (decoUrlRight != null) {
+						decoUrlRight.hide();
+					}
 				}
 			});
 		} catch (SQLException e1) {
