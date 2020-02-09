@@ -22,6 +22,7 @@ import java.util.prefs.Preferences;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IPath;
+import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
@@ -56,6 +57,8 @@ import org.eclipse.ui.internal.UIPlugin;
 import org.eclipse.ui.part.ViewPart;
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.Bundle;
+import org.eclipse.compare.CompareConfiguration;
+import org.eclipse.compare.CompareEditorInput;
 import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.internal.CompareAction;
 import org.eclipse.core.filesystem.EFS;
@@ -246,23 +249,36 @@ public class ConnectionsView extends ViewPart {
 		gridDataPasswordR.minimumWidth = 300;
 		txtPasswordRight.setLayoutData(gridDataPasswordR);
 
-		Button btn1 = new Button(baseCanvas, SWT.BORDER);
-		btn1.setText("Load JDBC Driver");
-		btn1.addListener(SWT.Selection, new Listener() {
+		Button btnCompare = new Button(baseCanvas, SWT.BORDER);
+		btnCompare.setText("Compare");
+		btnCompare.addListener(SWT.Selection, new Listener() {
 			public void handleEvent(Event e) {
 				switch (e.type) {
 				case SWT.Selection:
-					loadJdbcJar(parent);
+					testing();
 					break;
 				}
 			}
 		});
-		btn1.addSelectionListener(new MySelectionAdapter(getSite().getShell()));
+		btnCompare.addSelectionListener(new MySelectionAdapter(getSite().getShell()));
+		
+		Button btnLoadDriver = new Button(baseCanvas, SWT.BORDER);
+		btnLoadDriver.setText("Load JDBC Driver");
+		btnLoadDriver.addListener(SWT.Selection, new Listener() {
+			public void handleEvent(Event e) {
+				switch (e.type) {
+				case SWT.Selection:
+					loadJdbcJar();
+					break;
+				}
+			}
+		});
 
 		txtAbstract = new Text(baseCanvas, SWT.BORDER);
 		GridData gridDataText = new GridData(GridData.FILL_BOTH);
 		gridDataText.verticalAlignment = SWT.FILL;
 		gridDataText.grabExcessHorizontalSpace = true;
+		gridDataText.horizontalSpan = 2;
 		txtAbstract.setLayoutData(gridDataText);
 
 		createActions();
@@ -341,6 +357,21 @@ public class ConnectionsView extends ViewPart {
 						noConnectionErrorRight = false;
 					} 
 				}
+				
+//				CompareConfiguration compareConfig = new CompareConfiguration();				
+//				CompareEditorInput input = new CompareEditorInput(compareConfig) {
+//					
+//					@Override
+//					protected Object prepareInput(IProgressMonitor arg0) throws InvocationTargetException, InterruptedException {
+//						// TODO Auto-generated method stub
+//						return null;
+//					}
+//				};
+				
+				//CompareEditorAction compareAction = new CompareEditorAction();
+				//compareAction.run(action);
+				
+				//input.
 			}
 			try {
 				if (noConnectionErrorLeft&& this.decoUrlLeft != null) {
@@ -429,8 +460,8 @@ public class ConnectionsView extends ViewPart {
 
 	}
 
-	private void loadJdbcJar(Composite parent) {
-		FileDialog dialog = new FileDialog(parent.getShell(), SWT.OPEN);
+	private void loadJdbcJar() {
+		FileDialog dialog = new FileDialog(getSite().getShell(), SWT.OPEN);
 		// dialog.setFilterExtensions(new String[] { "*.html" });
 		dialog.setFilterPath("D:\\Begasoft\\workspaces\\ws4tmp\\substidoc\\libext\\");
 		selectedJdbcJarPath = dialog.open();
@@ -576,6 +607,8 @@ public class ConnectionsView extends ViewPart {
 		addTestAction = new Action("Testing") {
 			public void run() {
 				testing();
+				CompareEditorAction compareAction = new CompareEditorAction("hahahh faga","gagggew gagg");
+				compareAction.run(this);
 			}
 		};
 		addTestAction
@@ -610,6 +643,11 @@ public class ConnectionsView extends ViewPart {
 		prefs.put(KEY_RIGHT_2, this.txtUsernameRight.getText());
 		prefs.put(KEY_RIGHT_3, this.txtPasswordRight.getText());
 
+//		String[] vorschlaege = new String[]{"Vorschlag1", "Vorschlag2"};
+//		prefs.put("vorschlaege", vorschlaege);
+
+		
+		
 		try {
 			prefs.flush();
 		} catch (org.osgi.service.prefs.BackingStoreException e) {
@@ -618,7 +656,7 @@ public class ConnectionsView extends ViewPart {
 	}
 
 	private void loadPluginSettings() {
-		IEclipsePreferences prefs = new InstanceScope().getNode("PostgresCompare");
+		IEclipsePreferences prefs = InstanceScope.INSTANCE.getNode("PostgresCompare");
 		// you might want to call prefs.sync() if you're worried about others changing
 		// your settings
 		this.txtUrlLeft.setText(prefs.get(KEY_LEFT_1, "jdbc:postgresql://localhost:5432/postgres1"));
