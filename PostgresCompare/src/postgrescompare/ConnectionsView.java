@@ -29,12 +29,15 @@ import org.eclipse.jdt.internal.ui.packageview.PackageExplorerPart;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
+import org.eclipse.jface.fieldassist.ControlDecoration;
+import org.eclipse.jface.fieldassist.FieldDecorationRegistry;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.viewers.ISelectionChangedListener;
 import org.eclipse.jface.viewers.IStructuredSelection;
 import org.eclipse.jface.viewers.SelectionChangedEvent;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -81,6 +84,10 @@ public class ConnectionsView extends ViewPart {
 	Text txtUrlRight;
 	Text txtUsernameRight;
 	Text txtPasswordRight;
+
+	ControlDecoration decoUrlLeft;
+	ControlDecoration decoUrlRight;
+
 	Action addCompareAction;
 	Action addTestConnectionAction;
 	Action addTestAction;
@@ -262,12 +269,31 @@ public class ConnectionsView extends ViewPart {
 		loadPluginSettings();
 	}
 
+	private void displayConnectionErrorLeft() {
+		decoUrlLeft =  new ControlDecoration(txtUrlLeft, SWT.TOP | SWT.LEFT);
+		decoUrlLeft.setDescriptionText("Connection error");
+		Image image = FieldDecorationRegistry.getDefault().getFieldDecoration(FieldDecorationRegistry.DEC_ERROR)
+				.getImage();
+		decoUrlLeft.setImage(image);
+
+	}
+	private void displayConnectionErrorRight() {
+		decoUrlRight =  new ControlDecoration(txtUrlRight, SWT.TOP | SWT.LEFT);
+		decoUrlRight.setDescriptionText("Connection error");
+		Image image = FieldDecorationRegistry.getDefault().getFieldDecoration(FieldDecorationRegistry.DEC_ERROR)
+				.getImage();
+		decoUrlRight.setImage(image);
+
+	}
+
 	private void testing(Composite parent) {
 		System.out.println("testing clicked");
 		ContainerSelectionDialog dialog = new ContainerSelectionDialog(parent.getShell(),
 				ResourcesPlugin.getWorkspace().getRoot(), true, "Aha");
 		dialog.open();
 		Object[] result = dialog.getResult();
+		boolean noConnectionErrorLeft = true;
+		boolean noConnectionErrorRight = true;
 		for (int i = 0; i < result.length; i++) {
 			IPath path = (IPath) result[i];
 			System.out.println("class: " + path.getClass());
@@ -281,42 +307,55 @@ public class ConnectionsView extends ViewPart {
 				if (!fileLeft.exists()) {
 					try {
 						ReadDatabaseStructure rds = new ReadDatabaseStructure();
-						StringBuffer sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(), this.txtUsernameLeft.getText(),
-								this.txtPasswordLeft.getText());
+						StringBuffer sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(),
+								this.txtUsernameLeft.getText(), this.txtPasswordLeft.getText());
 						fileLeft.create(new ByteArrayInputStream(sbLeft.toString().getBytes("UTF-8")), true, null);
 					} catch (CoreException e) {
 						e.printStackTrace();
 					} catch (UnsupportedEncodingException e) {
 						e.printStackTrace();
-					}
+					} catch (SQLException e) {
+						displayConnectionErrorLeft();
+						noConnectionErrorLeft = false;
+					} 
 				}
 				IFile fileRight = folder.getFile(getDatabaseNameRight() + ".sql");
 				if (!fileRight.exists()) {
 					try {
 						ReadDatabaseStructure rds = new ReadDatabaseStructure();
-						StringBuffer sbLeft = rds.readDbStructure(this.txtUrlRight.getText(), this.txtUsernameRight.getText(),
-								this.txtPasswordRight.getText());
+						StringBuffer sbLeft = rds.readDbStructure(this.txtUrlRight.getText(),
+								this.txtUsernameRight.getText(), this.txtPasswordRight.getText());
 						fileRight.create(new ByteArrayInputStream(sbLeft.toString().getBytes("UTF-8")), true, null);
 					} catch (CoreException e) {
 						e.printStackTrace();
 					} catch (UnsupportedEncodingException e) {
 						e.printStackTrace();
-					}
+					} catch (SQLException e) {
+						displayConnectionErrorRight();
+						noConnectionErrorRight = false;
+					} 
 				}
 
 			}
-
+			if (noConnectionErrorLeft) {
+				this.decoUrlLeft.hide();
+			}
+			if (noConnectionErrorRight) {
+				this.decoUrlRight.hide();
+			}
 		}
-
 	}
+
 	private String getDatabaseNameLeft() {
 		String[] bits = txtUrlLeft.getText().split("/");
-		return bits[bits.length-1];
+		return bits[bits.length - 1];
 	}
+
 	private String getDatabaseNameRight() {
 		String[] bits = txtUrlRight.getText().split("/");
-		return bits[bits.length-1];
+		return bits[bits.length - 1];
 	}
+
 	private void compare() {
 		System.out.println("compare clicked");
 		// File fileToOpen = new File("C:\\temp\\UserTest.xml");
@@ -344,10 +383,15 @@ public class ConnectionsView extends ViewPart {
 		System.out.println("testConnections clicked");
 		savePluginSettings();
 		ReadDatabaseStructure rds = new ReadDatabaseStructure();
-		StringBuffer sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(), this.txtUsernameLeft.getText(),
-				this.txtPasswordLeft.getText());
-		System.out.println("-- Left Database");
-		System.out.println(sbLeft.toString());
+		StringBuffer sbLeft = null;
+		 try {
+			sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(), this.txtUsernameLeft.getText(),
+					this.txtPasswordLeft.getText());
+			System.out.println("-- Left Database");
+			System.out.println(sbLeft.toString());
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 
 		IEditorRegistry registry = PlatformUI.getWorkbench().getEditorRegistry();
 		IEditorDescriptor[] editors = registry.getEditors("filename.txt");
