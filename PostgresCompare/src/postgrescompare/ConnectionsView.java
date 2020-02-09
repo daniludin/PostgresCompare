@@ -123,7 +123,7 @@ public class ConnectionsView extends ViewPart {
 	private boolean saveFileToProject;
 	StringBuffer sbLeft = null;
 	StringBuffer sbRight = null;
-	
+	Object[] result = new Object[10];
 
 	@Override
 	public void init(IViewSite site, IMemento memento) throws PartInitException {
@@ -241,59 +241,64 @@ public class ConnectionsView extends ViewPart {
 
 		Button btnCompare = new Button(baseCanvas, SWT.BORDER);
 		btnCompare.setText("Compare");
-		btnCompare.addListener(SWT.Selection, new Listener() {
-			public void handleEvent(Event e) {
-				switch (e.type) {
-				case SWT.Selection:
-					compareDatabases(addCompareAction, 
-							txtUrlLeft.getText(), 
-							txtUsernameLeft.getText(), 
-							txtPasswordLeft.getText(), 
-							txtUrlRight.getText(), 
-							txtUsernameRight.getText(), 
-							txtPasswordRight.getText());
-					break;
-				}
-			}
-		});
-		//btnCompare.addSelectionListener(new MySelectionAdapter(getSite().getShell()));
+//		btnCompare.addListener(SWT.Selection, new Listener() {
+//			public void handleEvent(Event e) {
+//				switch (e.type) {
+//				case SWT.Selection:
+//					compareDatabases(addCompareAction, 
+//							txtUrlLeft.getText(), 
+//							txtUsernameLeft.getText(), 
+//							txtPasswordLeft.getText(), 
+//							txtUrlRight.getText(), 
+//							txtUsernameRight.getText(), 
+//							txtPasswordRight.getText());
+//					break;
+//				}
+//			}
+//		});
+		// btnCompare.addSelectionListener(new
+		// MySelectionAdapter(getSite().getShell()));
 		btnCompare.addSelectionListener(new SelectionAdapter() {
 
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				// TODO Auto-generated method stub
-				//super.widgetSelected(e);
-		         
-				Job job = new Job("First Job") {
-		            @Override
-		            protected IStatus run(IProgressMonitor monitor) {
-	
-		            	//doLongThing();
-						compareDatabases(addCompareAction,  
-								getUrlLeft(), 
-								getUserLeft(), 
-								getPwLeft(), 
-								getUrlRight(), 
-								getUserRight(), 
-								getPwRight());		                
-						syncWithUi();
-		                // use this to open a Shell in the UI thread
-		                return Status.OK_STATUS;
-		            }
+				decoUrlLeft.hide();
+				decoUrlRight.hide();
+				if (saveFileToProject) {
 
-		        };
-		        job.setUser(true);
-		        job.schedule();
+					ContainerSelectionDialog dialog = new ContainerSelectionDialog(getSite().getShell(),
+							ResourcesPlugin.getWorkspace().getRoot(), true, "Select a folder");
+					dialog.open();
+					result = dialog.getResult();
+					if (result == null) {
+						return;
+					}
+				}
+
+				Job job = new Job("Postgres Compare running...") {
+					@Override
+					protected IStatus run(IProgressMonitor monitor) {
+
+						// doLongThing();
+						compareDatabases(addCompareAction, result, getUrlLeft(), getUserLeft(), getPwLeft(),
+								getUrlRight(), getUserRight(), getPwRight());
+						//syncWithUi();
+						// use this to open a Shell in the UI thread
+						return Status.OK_STATUS;
+					}
+
+				};
+				job.setUser(true);
+				job.schedule();
 
 			}
-			
+
 		});
-		
-		
+
 		btnChooseSaveFile = new Button(baseCanvas, SWT.CHECK);
 		btnChooseSaveFile.setText("Add results to Project");
 		btnChooseSaveFile.addSelectionListener(listenerOption);
-		
+
 		Button btnLoadDriver = new Button(baseCanvas, SWT.BORDER);
 		btnLoadDriver.setText("Load JDBC Driver");
 		btnLoadDriver.addListener(SWT.Selection, new Listener() {
@@ -313,14 +318,14 @@ public class ConnectionsView extends ViewPart {
 		gridDataText.horizontalSpan = 2;
 		txtAbstract.setLayoutData(gridDataText);
 
-		//createToolbar();
+		// createToolbar();
 
 		loadPluginSettings();
 	}
+
 	ModifyListener listenerUrlLeft = new ModifyListener() {
 		@Override
 		public void modifyText(ModifyEvent arg0) {
-
 			setUrlLeft(txtUrlLeft.getText());
 			setUserLeft(txtUsernameLeft.getText());
 			setPwLeft(txtPasswordLeft.getText());
@@ -330,42 +335,40 @@ public class ConnectionsView extends ViewPart {
 		}
 	};
 	SelectionListener listenerOption = new SelectionListener() {
-		
 		@Override
 		public void widgetSelected(SelectionEvent event) {
 			if (btnChooseSaveFile.getSelection()) {
 				setSaveFileToProject(true);
 			} else {
-				setSaveFileToProject(false);				
+				setSaveFileToProject(false);
 			}
 		}
-		
+
 		@Override
 		public void widgetDefaultSelected(SelectionEvent arg0) {
-			// TODO Auto-generated method stub
-			
 		}
 	};
-    private void syncWithUi() {
-        Display.getDefault().asyncExec(new Runnable() {
-            public void run() {
-                MessageDialog.openInformation(getSite().getShell(), "Your Popup ",
-                        "Your job has finished.");
-            }
-        });
 
-    }
-    private void doLongThing() {
-        for (int i = 0; i < 10; i++) {
-            try {
-                // We simulate a long running operation here
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            System.out.println("Doing something");
-        }
-    }
+	private void syncWithUi() {
+		Display.getDefault().asyncExec(new Runnable() {
+			public void run() {
+				MessageDialog.openInformation(getSite().getShell(), "Postgres Compare ", "Finished.");
+			}
+		});
+
+	}
+
+	private void doLongThing() {
+		for (int i = 0; i < 10; i++) {
+			try {
+				// We simulate a long running operation here
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			System.out.println("Doing something");
+		}
+	}
 
 	private void displayConnectionErrorLeft() {
 		decoUrlLeft = new ControlDecoration(txtUrlLeft, SWT.TOP | SWT.LEFT);
@@ -385,7 +388,8 @@ public class ConnectionsView extends ViewPart {
 
 	}
 
-	private void compareDatabases(Action action, String urlL, String userL, String pwL, String urlR, String userR, String pwR) {
+	private void compareDatabases(Action action, Object[] result, String urlL, String userL, String pwL, String urlR,
+			String userR, String pwR) {
 		System.out.println("testing clicked");
 		boolean noConnectionErrorLeft = true;
 		boolean noConnectionErrorRight = true;
@@ -393,35 +397,66 @@ public class ConnectionsView extends ViewPart {
 		try {
 			ReadDatabaseStructure rds = new ReadDatabaseStructure();
 			sbLeft = rds.readDbStructure(urlL, userL, pwL);
+			Display.getDefault().asyncExec(new Runnable() {
+				public void run() {
+					decoUrlLeft.hide();
+				}
+			});
+
 		} catch (SQLException e1) {
-	        Display.getDefault().asyncExec(new Runnable() {
-	            public void run() {
-	            	displayConnectionErrorLeft();
-	            }
-	        });
+			Display.getDefault().asyncExec(new Runnable() {
+				public void run() {
+					displayConnectionErrorLeft();
+				}
+			});
 			noConnectionErrorLeft = false;
+			//return;
 		}
 		try {
 			ReadDatabaseStructure rdsRight = new ReadDatabaseStructure();
 			sbRight = rdsRight.readDbStructure(urlR, userR, pwR);
+			Display.getDefault().asyncExec(new Runnable() {
+				public void run() {
+					decoUrlRight.hide();
+				}
+			});
 		} catch (SQLException e1) {
-	        Display.getDefault().asyncExec(new Runnable() {
-	            public void run() {
-	            	displayConnectionErrorRight();
-	            }
-	        });
+			Display.getDefault().asyncExec(new Runnable() {
+				public void run() {
+					displayConnectionErrorRight();
+				}
+			});
 			noConnectionErrorRight = false;
+			//return;
 		}
-		
-		if (isSaveFileToProject()) {
-			ContainerSelectionDialog dialog = new ContainerSelectionDialog(getSite().getShell(),
-					ResourcesPlugin.getWorkspace().getRoot(), true, "Select a folder");
-			dialog.open();
-			Object[] result = dialog.getResult();
-			if (result == null) {
-				return;
-			}
+		if (!noConnectionErrorLeft || !noConnectionErrorRight) {
+			return;
+		}
+//		try {
+//			if (!noConnectionErrorLeft && this.decoUrlLeft != null) {
+//				Display.getDefault().asyncExec(new Runnable() {
+//					public void run() {
+//						decoUrlLeft.hide();
+//					}
+//				});
+//
+//			}
+//			if (!noConnectionErrorRight && this.decoUrlRight != null) {
+//				Display.getDefault().asyncExec(new Runnable() {
+//					public void run() {
+//						decoUrlRight.hide();
+//					}
+//				});
+//			}
+//			if (!noConnectionErrorRight || !noConnectionErrorRight) {
+//				return;
+//			}
+//			
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
 
+		if (isSaveFileToProject()) {
 
 			for (int i = 0; i < result.length; i++) {
 				IPath path = (IPath) result[i];
@@ -458,31 +493,12 @@ public class ConnectionsView extends ViewPart {
 				}
 			}
 		}
-		try {
-			if (noConnectionErrorLeft && this.decoUrlLeft != null) {
-		        Display.getDefault().asyncExec(new Runnable() {
-		            public void run() {
-						decoUrlLeft.hide();
-		            }
-		        });
-
+		Display.getDefault().asyncExec(new Runnable() {
+			public void run() {
+				CompareEditorAction compareAction = new CompareEditorAction(sbLeft.toString(), sbRight.toString());
+				compareAction.run(action);
 			}
-			if (noConnectionErrorRight && this.decoUrlRight != null) {
-		        Display.getDefault().asyncExec(new Runnable() {
-		            public void run() {
-						decoUrlRight.hide();
-		            }
-		        });
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-        Display.getDefault().asyncExec(new Runnable() {
-            public void run() {
-        		CompareEditorAction compareAction = new CompareEditorAction(sbLeft.toString(), sbRight.toString());
-        		compareAction.run(action);
-            }
-        });
+		});
 	}
 
 //	private String getFileName() {
@@ -491,12 +507,12 @@ public class ConnectionsView extends ViewPart {
 //	}
 
 	private String getDatabaseNameLeft() {
-		String[] bits = txtUrlLeft.getText().split("/");
+		String[] bits = getUrlLeft().split("/");
 		return bits[bits.length - 1];
 	}
 
 	private String getDatabaseNameRight() {
-		String[] bits = txtUrlRight.getText().split("/");
+		String[] bits = getUrlRight().split("/");
 		return bits[bits.length - 1];
 	}
 
@@ -687,19 +703,14 @@ public class ConnectionsView extends ViewPart {
 
 		addCompareAction = new Action("Testing") {
 			public void run() {
-				compareDatabases(addCompareAction,  
-						getUrlLeft(), 
-						getUserLeft(), 
-						getPwLeft(), 
-						getUrlRight(), 
-						getUserRight(), 
-						getPwRight());		                
+
+				compareDatabases(addCompareAction, null, getUrlLeft(), getUserLeft(), getPwLeft(), getUrlRight(),
+						getUserRight(), getPwRight());
 			}
 		};
 		addCompareAction
 				.setImageDescriptor(AbstractUIPlugin.imageDescriptorFromPlugin("PostgresCompare", "icons/test.gif"));
 	}
-
 
 	private void savePluginSettings() {
 		// saves plugin preferences at the workspace level
@@ -781,6 +792,7 @@ public class ConnectionsView extends ViewPart {
 	public void setPwRight(String pwRight) {
 		this.pwRight = pwRight;
 	}
+
 	public boolean isSaveFileToProject() {
 		return saveFileToProject;
 	}
