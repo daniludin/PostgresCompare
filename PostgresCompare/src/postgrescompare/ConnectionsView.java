@@ -29,6 +29,7 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.jdt.internal.ui.packageview.PackageExplorerPart;
 import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.fieldassist.ControlDecoration;
@@ -255,7 +256,7 @@ public class ConnectionsView extends ViewPart {
 			public void handleEvent(Event e) {
 				switch (e.type) {
 				case SWT.Selection:
-					testing();
+					//testing();
 					break;
 				}
 			}
@@ -304,7 +305,7 @@ public class ConnectionsView extends ViewPart {
 
 	}
 
-	private void testing() {
+	private void testing(Action action) {
 		System.out.println("testing clicked");
 		ContainerSelectionDialog dialog = new ContainerSelectionDialog(getSite().getShell(),
 				ResourcesPlugin.getWorkspace().getRoot(), true, "Aha");
@@ -324,12 +325,14 @@ public class ConnectionsView extends ViewPart {
 			IContainer[] folders = root.findContainersForLocationURI(uri);
 			if (folders != null && folders.length > 0) {
 				IFolder folder = (IFolder) folders[0];
+				StringBuffer sbLeft = null;
+				StringBuffer sbRight = null;
 				
 				IFile fileLeft = folder.getFile(getDatabaseNameLeft() + ".sql");
 				if (!fileLeft.exists()) {
 					try {
 						ReadDatabaseStructure rds = new ReadDatabaseStructure();
-						StringBuffer sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(),
+						sbLeft = rds.readDbStructure(this.txtUrlLeft.getText(),
 								this.txtUsernameLeft.getText(), this.txtPasswordLeft.getText());
 						fileLeft.create(new ByteArrayInputStream(sbLeft.toString().getBytes("UTF-8")), true, null);
 					} catch (CoreException e) {
@@ -345,9 +348,9 @@ public class ConnectionsView extends ViewPart {
 				if (!fileRight.exists()) {
 					try {
 						ReadDatabaseStructure rds = new ReadDatabaseStructure();
-						StringBuffer sbLeft = rds.readDbStructure(this.txtUrlRight.getText(),
+						sbRight = rds.readDbStructure(this.txtUrlRight.getText(),
 								this.txtUsernameRight.getText(), this.txtPasswordRight.getText());
-						fileRight.create(new ByteArrayInputStream(sbLeft.toString().getBytes("UTF-8")), true, null);
+						fileRight.create(new ByteArrayInputStream(sbRight.toString().getBytes("UTF-8")), true, null);
 					} catch (CoreException e) {
 						e.printStackTrace();
 					} catch (UnsupportedEncodingException e) {
@@ -368,10 +371,8 @@ public class ConnectionsView extends ViewPart {
 //					}
 //				};
 				
-				//CompareEditorAction compareAction = new CompareEditorAction();
-				//compareAction.run(action);
-				
-				//input.
+				CompareEditorAction compareAction = new CompareEditorAction(sbLeft.toString(), sbRight.toString());
+				compareAction.run(action);
 			}
 			try {
 				if (noConnectionErrorLeft&& this.decoUrlLeft != null) {
@@ -606,9 +607,9 @@ public class ConnectionsView extends ViewPart {
 
 		addTestAction = new Action("Testing") {
 			public void run() {
-				testing();
-				CompareEditorAction compareAction = new CompareEditorAction("hahahh faga","gagggew gagg");
-				compareAction.run(this);
+				testing(this);
+//				CompareEditorAction compareAction = new CompareEditorAction("hahahh faga","gagggew gagg");
+//				compareAction.run(this);
 			}
 		};
 		addTestAction

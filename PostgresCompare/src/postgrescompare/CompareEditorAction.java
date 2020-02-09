@@ -17,7 +17,7 @@ public class CompareEditorAction implements IWorkbenchWindowActionDelegate {
 	}
 
 	public void run(IAction action) {
-		CompareUI.openCompareEditor(new CompareInput(this.sbLeft, this.sbRight));
+		CompareUI.openCompareEditor(new CompareInput(this.sbLeft, this.sbRight), true);
 	}
 
 	@Override
