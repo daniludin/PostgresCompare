@@ -68,6 +68,7 @@ public class ReadDatabaseStructure {
 					// result.append("" + rsFunctions.getString(""));
 					System.out.println("function found");
 				}
+				rsFunctions.close();
 			}
 
 			System.out.println(result.toString());
