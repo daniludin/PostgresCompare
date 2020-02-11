@@ -474,7 +474,18 @@ public class ConnectionsView extends ViewPart {
 
 				IContainer[] folders = root.findContainersForLocationURI(uri);
 				if (folders != null && folders.length > 0) {
-					IFolder folder = (IFolder) folders[0];
+					
+					IFolder folder = null;
+					try {
+						folder = (IFolder) folders[0];
+					} catch (Exception e1) {
+						Display.getDefault().asyncExec(new Runnable() {
+							public void run() {
+								MessageDialog.openError(getSite().getShell(), "Error", "Can't use Project folder as parent folder");
+							}
+						});
+						return;
+					}
 
 					IFile fileLeft = folder.getFile(getDatabaseNameLeft() + ".sql");
 					if (!fileLeft.exists()) {

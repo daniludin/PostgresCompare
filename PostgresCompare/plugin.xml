@@ -67,7 +67,7 @@
 	</extension>
 	<extension point="org.eclipse.ui.views">
 	        <view id="postgrescompare.connectionsview"
-	             name="Connections View"
+	             name="PostgresMonitor"
 	          class="postgrescompare.ConnectionsView"
 	          icon="icons\sample.png"/>
 	</extension>
