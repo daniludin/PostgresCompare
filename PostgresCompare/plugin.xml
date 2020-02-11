@@ -36,7 +36,7 @@
             locationURI="menu:org.eclipse.ui.main.menu?after=additions">
          <menu
                id="PostgresCompare.menus.sampleMenu"
-               label="Sample Menu"
+               label="PostgresCompare Menu"
                mnemonic="M">
             <command
                   commandId="PostgresCompare.commands.sampleCommand"

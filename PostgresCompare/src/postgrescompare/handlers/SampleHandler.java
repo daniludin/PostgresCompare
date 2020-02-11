@@ -15,7 +15,7 @@ public class SampleHandler extends AbstractHandler {
 		MessageDialog.openInformation(
 				window.getShell(),
 				"PostgresCompare",
-				"Hello, Eclipse world");
+				"Hello, PostgresCompare");
 		return null;
 	}
 }
